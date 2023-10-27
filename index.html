@@ -1,0 +1,179 @@
+<!-- Course: SENG 513 -->
+<!-- Date: OCT 23, 2023 -->
+<!-- Assignment 2 -->
+<!-- Name: Maaz Hassan -->
+<!-- UCID: 30087059 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="index.css">
+  <title>Chess</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <div id="board">
+      <div id="squares">
+        <!-- First row -->
+        <div class="square-dark square-11"></div>
+        <div class="square-light square-21"></div>
+        <div class="square-dark square-31"></div>
+        <div class="square-light square-41"></div>
+        <div class="square-dark square-51"></div>
+        <div class="square-light square-61"></div>
+        <div class="square-dark square-71"></div>
+        <div class="square-light square-81"></div>
+        <!-- Second row -->
+        <div class="square-light square-12"></div>
+        <div class="square-dark square-22"></div>
+        <div class="square-light square-32"></div>
+        <div class="square-dark square-42"></div>
+        <div class="square-light square-52"></div>
+        <div class="square-dark square-62"></div>
+        <div class="square-light square-72"></div>
+        <div class="square-dark square-82"></div>
+  
+        <!-- Third row -->
+        <div class="square-dark square-13"></div>
+        <div class="square-light square-23"></div>
+        <div class="square-dark square-33"></div>
+        <div class="square-light square-43"></div>
+        <div class="square-dark square-53"></div>
+        <div class="square-light square-63"></div>
+        <div class="square-dark square-73"></div>
+        <div class="square-light square-83"></div>
+  
+        <!-- Fourth row -->
+        <div class="square-light square-14"></div>
+        <div class="square-dark square-24"></div>
+        <div class="square-light square-34"></div>
+        <div class="square-dark square-44"></div>
+        <div class="square-light square-54"></div>
+        <div class="square-dark square-64"></div>
+        <div class="square-light square-74"></div>
+        <div class="square-dark square-84"></div>
+  
+        <!-- Fifth row -->
+        <div class="square-dark square-15"></div>
+        <div class="square-light square-25"></div>
+        <div class="square-dark square-35"></div>
+        <div class="square-light square-45"></div>
+        <div class="square-dark square-55"></div>
+        <div class="square-light square-65"></div>
+        <div class="square-dark square-75"></div>
+        <div class="square-light square-85"></div>
+  
+        <!-- Sixth row -->
+        <div class="square-light square-16"></div>
+        <div class="square-dark square-26"></div>
+        <div class="square-light square-36"></div>
+        <div class="square-dark square-46"></div>
+        <div class="square-light square-56"></div>
+        <div class="square-dark square-66"></div>
+        <div class="square-light square-76"></div>
+        <div class="square-dark square-86"></div>
+  
+        <!-- Seventh row -->
+        <div class="square-dark square-17"></div>
+        <div class="square-light square-27"></div>
+        <div class="square-dark square-37"></div>
+        <div class="square-light square-47"></div>
+        <div class="square-dark square-57"></div>
+        <div class="square-light square-67"></div>
+        <div class="square-dark square-77"></div>
+        <div class="square-light square-87"></div>
+  
+        <!-- Eighth row -->
+        <div class="square-light square-18"></div>
+        <div class="square-dark square-28"></div>
+        <div class="square-light square-38"></div>
+        <div class="square-dark square-48"></div>
+        <div class="square-light square-58"></div>
+        <div class="square-dark square-68"></div>
+        <div class="square-light square-78"></div>
+        <div class="square-dark square-88"></div>
+  
+      </div>
+      <div id="highlights">
+        <div class="square-62"></div>
+      </div>
+      <div id="pieces">
+        <div class="wr square-11"></div>
+        <div class="wn square-21"></div>
+        <div class="wb square-31"></div>
+        <div class="wq square-41"></div>
+        <div class="wk square-51"></div>
+        <div class="wb square-61"></div>
+        <div class="wn square-71"></div>
+        <div class="wr square-81"></div>
+        <div class="wp square-12"></div>
+        <div class="wp square-22"></div>
+        <div class="wp square-32"></div>
+        <div class="wp square-42"></div>
+        <div class="wp square-52"></div>
+        <div class="wp square-62"></div>
+        <div class="wp square-72"></div>
+        <div class="wp square-82"></div>
+        <div class="bp square-17"></div>
+        <div class="bp square-27"></div>
+        <div class="bp square-37"></div>
+        <div class="bp square-47"></div>
+        <div class="bp square-57"></div>
+        <div class="bp square-67"></div>
+        <div class="bp square-77"></div>
+        <div class="bp square-87"></div>
+        <div class="br square-18"></div>
+        <div class="bn square-28"></div>
+        <div class="bb square-38"></div>
+        <div class="bq square-48"></div>
+        <div class="bk square-58"></div>
+        <div class="bb square-68"></div>
+        <div class="bn square-78"></div>
+        <div class="br square-88"></div>
+      </div>
+      <div id="move-hints">
+        <div class="square-63"></div>
+        <div class="square-64"></div>
+      </div>
+      <div id="capture-hints">
+        <div class="square-47"></div>
+      </div>
+    </div>
+    <div id="sidebar">
+      <div class="captured-pieces">
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wp"></div>
+        <div class="wn"></div>
+        <div class="wn"></div>
+        <div class="wb"></div>
+        <div class="wb"></div>
+        <div class="wr"></div>
+        <div class="wr"></div>
+        <div class="wq"></div>
+      </div>
+      <div id="menu">
+        <span>Welcome!</span>
+        <button id="play-button">Play</button>
+      </div>
+      <div class="captured-pieces">
+        <div class="bp"></div>
+        <div class="bn"></div>
+        <div class="bb"></div>
+        <div class="br"></div>
+        <div class="bq"></div>
+      </div>
+    </div>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>

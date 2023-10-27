@@ -1,0 +1,476 @@
+/* Course: SENG 513 */
+/* Date: OCT 23, 2023 */
+/* Assignment 2 */
+/* Name: Maaz Hassan */
+/* UCID: 30087059 */
+:root {
+  --dark: #7ea0b9;
+  --light: #dfeaf2;
+  --background: rgb(218, 218, 218);
+  --play-button: rgb(125, 192, 80);
+  --play-button-shadow: rgb(53, 119, 53);
+  --play-button-hover: rgb(141, 216, 91);
+  --reset-button: rgb(212, 89, 83);
+  --reset-button-shadow: rgb(117, 50, 46);
+  --reset-button-hover: rgb(236, 101, 94);
+  --hint-color: rgba(0,0,0,.1);
+  --highlight-color: rgb(94, 215, 241);
+}
+
+body {
+  background-color: var(--background);
+  font-family: "Montserrat", sans-serif;
+}
+
+button {
+  font-family: "Montserrat", sans-serif;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin: 3rem 0 0;
+  gap: 1rem;
+}
+
+#board {
+  width: 50rem;
+  height: 50rem;
+  position: relative;
+}
+
+#pieces > div {
+  width: 12.5%;
+  height: 12.5%;
+  position: absolute;
+  background-size: contain;
+  cursor: grab;
+}
+
+#move-hints > div, #capture-hints > div, #highlights > div {
+  width: 12.5%;
+  height: 12.5%;
+  position: absolute;
+}
+
+#move-hints > div, #capture-hints > div {
+  pointer-events: none;
+  background-clip: content-box;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+#move-hints > div {
+  padding: 4.2%;
+  background-color: var(--hint-color);
+}
+
+#capture-hints > div {
+  border: 10px solid rgba(0,0,0,.1);
+}
+
+#highlights > div {
+  background-color: var(--highlight-color);
+  opacity: 0.5;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20rem;
+  height: 10rem;
+  background-color: gray;
+  border-radius: 15px;
+  box-shadow: 0 0.1rem 0.1rem 0 rgba(0,0,0,.2)
+}
+
+#menu > span {
+  font-size: 1.8rem;
+  color: white;
+  margin: 1rem 0 0;
+  text-shadow: 0 .1rem 0 rgba(0, 0, 0, 0.3);
+}
+
+#play-button {
+  width: 80%;
+  height: 2rem;
+  background-color: var(--play-button);
+  margin: 4rem 0 0;
+  font-size: 1.2rem;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  box-shadow: 3px 3px var(--play-button-shadow);
+  transition-duration: .1s;
+  transition-property: background-color;
+  text-shadow: 0 .1rem 0 rgba(0, 0, 0, 0.3);
+}
+
+#play-button:hover {
+  background-color: var(--play-button-hover);
+}
+
+.captured-pieces {
+  height: 2rem;
+  width: 100%;
+}
+
+.captured-pieces > div {
+  display: inline-block;
+  height: 2rem;
+  width: 2rem;
+  background-size: contain;
+  margin: 0 -1.15rem 0 0;
+}
+
+.square-dark {
+  width: 12.5%;
+  height: 12.5%;
+  position: absolute;
+  background-color: var(--dark);
+}
+
+.square-light  {
+  width: 12.5%;
+  height: 12.5%;
+  position: absolute;
+  background-color: var(--light);
+}
+
+/* First row */
+.square-11 {
+  transform: translateY(700%);
+}
+
+.square-21 {
+  transform: translate(100%, 700%);
+}
+
+.square-31 {
+  transform: translate(200%, 700%);
+}
+
+.square-41 {
+  transform: translate(300%, 700%);
+}
+
+.square-51 {
+  transform: translate(400%, 700%);
+}
+
+.square-61 {
+  transform: translate(500%, 700%);
+}
+
+.square-71 {
+  transform: translate(600%, 700%);
+}
+
+.square-81 {
+  transform: translate(700%, 700%);
+}
+
+/* Second row */
+.square-12 {
+  transform: translateY(600%);
+}
+
+.square-22 {
+  transform: translate(100%, 600%);
+}
+
+.square-32 {
+  transform: translate(200%, 600%);
+}
+
+.square-42 {
+  transform: translate(300%, 600%);
+}
+
+.square-52 {
+  transform: translate(400%, 600%);
+}
+
+.square-62 {
+  transform: translate(500%, 600%);
+}
+
+.square-72 {
+  transform: translate(600%, 600%);
+}
+
+.square-82 {
+  transform: translate(700%, 600%);
+}
+
+/* Third row */
+.square-13 {
+  transform: translateY(500%);
+}
+
+.square-23 {
+  transform: translate(100%, 500%);
+}
+
+.square-33 {
+  transform: translate(200%, 500%);
+}
+
+.square-43 {
+  transform: translate(300%, 500%);
+}
+
+.square-53 {
+  transform: translate(400%, 500%);
+}
+
+.square-63 {
+  transform: translate(500%, 500%);
+}
+
+.square-73 {
+  transform: translate(600%, 500%);
+}
+
+.square-83 {
+  transform: translate(700%, 500%);
+}
+
+/* Fourth row */
+.square-14 {
+  transform: translateY(400%);
+}
+
+.square-24 {
+  transform: translate(100%, 400%);
+}
+
+.square-34 {
+  transform: translate(200%, 400%);
+}
+
+.square-44 {
+  transform: translate(300%, 400%);
+}
+
+.square-54 {
+  transform: translate(400%, 400%);
+}
+
+.square-64 {
+  transform: translate(500%, 400%);
+}
+
+.square-74 {
+  transform: translate(600%, 400%);
+}
+
+.square-84 {
+  transform: translate(700%, 400%);
+}
+
+/* Fifth row */
+.square-15 {
+  transform: translateY(300%);
+}
+
+.square-25 {
+  transform: translate(100%, 300%);
+}
+
+.square-35 {
+  transform: translate(200%, 300%);
+}
+
+.square-45 {
+  transform: translate(300%, 300%);
+}
+
+.square-55 {
+  transform: translate(400%, 300%);
+}
+
+.square-65 {
+  transform: translate(500%, 300%);
+}
+
+.square-75 {
+  transform: translate(600%, 300%);
+}
+
+.square-85 {
+  transform: translate(700%, 300%);
+}
+
+/* Sixth row */
+.square-16 {
+  transform: translateY(200%);
+}
+
+.square-26 {
+  transform: translate(100%, 200%);
+}
+
+.square-36 {
+  transform: translate(200%, 200%);
+}
+
+.square-46 {
+  transform: translate(300%, 200%);
+}
+
+.square-56 {
+  transform: translate(400%, 200%);
+}
+
+.square-66 {
+  transform: translate(500%, 200%);
+}
+
+.square-76 {
+  transform: translate(600%, 200%);
+}
+
+.square-86 {
+  transform: translate(700%, 200%);
+}
+
+/* Seventh row */
+.square-17 {
+  transform: translateY(100%);
+}
+
+.square-27 {
+  transform: translate(100%, 100%);
+}
+
+.square-37 {
+  transform: translate(200%, 100%);
+}
+
+.square-47 {
+  transform: translate(300%, 100%);
+}
+
+.square-57 {
+  transform: translate(400%, 100%);
+}
+
+.square-67 {
+  transform: translate(500%, 100%);
+}
+
+.square-77 {
+  transform: translate(600%, 100%);
+}
+
+.square-87 {
+  transform: translate(700%, 100%);
+}
+
+/* Eighth row */
+.square-18 {
+  transform: translate(0);
+}
+
+.square-28 {
+  transform: translateX(100%);
+}
+
+.square-38 {
+  transform: translateX(200%);
+}
+
+.square-48 {
+  transform: translateX(300%);
+}
+
+.square-58 {
+  transform: translateX(400%);
+}
+
+.square-68 {
+  transform: translateX(500%);
+}
+
+.square-78 {
+  transform: translateX(600%);
+}
+
+.square-88 {
+  transform: translateX(700%);
+}
+
+.square-11.square-dark {
+  border-bottom-left-radius: 5px;
+}
+
+.square-81.square-light {
+  border-bottom-right-radius: 5px;
+}
+
+.square-18.square-light {
+  border-top-left-radius: 5px;
+}
+
+.square-88.square-dark {
+  border-top-right-radius: 5px;
+}
+
+.wp {
+  background-image: url("./assets/white_pawn.svg");
+}
+
+.wn {
+  background-image: url("./assets/white_knight.svg");
+}
+
+.wb {
+  background-image: url("./assets/white_bishop.svg");
+}
+
+.wr {
+  background-image: url("./assets/white_rook.svg");
+}
+
+.wq {
+  background-image: url("./assets/white_queen.svg");
+}
+
+.wk {
+  background-image: url("./assets/white_king.svg");
+}
+
+.bp {
+  background-image: url("./assets/black_pawn.svg");
+}
+
+.bn {
+  background-image: url("./assets/black_knight.svg");
+}
+
+.bb {
+  background-image: url("./assets/black_bishop.svg");
+}
+
+.br {
+  background-image: url("./assets/black_rook.svg");
+}
+
+.bq {
+  background-image: url("./assets/black_queen.svg");
+}
+
+.bk {
+  background-image: url("./assets/black_king.svg");
+}
+
