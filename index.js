@@ -33,10 +33,12 @@ let moves = []
 // Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
 let turn;
 
+// Store the currently selected piece
+let selectedPiece = null;
+
 // Are we currently dragging a piece
 let mouseDown = false;
-let draggingPieceSquareClass = "";
-let dragging = false;
+let draggingPiece = null;
 
 // Get coordinates of board for drag offset correction
 const boardElement = document.getElementById("board");
@@ -65,6 +67,12 @@ function handleClickPlay() {
     piece.addEventListener("mouseup", handlePieceMouseUp);
     piece.addEventListener("mousemove", handlePieceDrag);
   }
+
+  const squares = document.getElementById("squares").children;
+  for (const square of squares) {
+    square.addEventListener("mousedown", handleSquareMouseDown);
+    square.addEventListener("mouseup", handleSquareMouseUp);
+  }
 }
 
 // Resets the game to its initial state, unregistering ALL listeners for the board
@@ -81,8 +89,10 @@ function handleClickReset() {
 // We also need to check if the piece is being dragged:
   // Attach a "mousemove" event listener to this piece while the mouse is down
 function handlePieceMouseDown(e) {
+  e.preventDefault();
   const pieceElement = e.target;
-  pieceElement.style.cursor = "grabbing";
+  selectedPiece = pieceElement;
+  selectedPiece.style.cursor = "grabbing";
   mouseDown = true;
 }
 
@@ -96,8 +106,8 @@ function handlePieceMouseUp(e) {
   const pieceElement = e.target;
   pieceElement.style.removeProperty("cursor");
 
-  if (dragging) {
-    dragging = false;
+  if (draggingPiece) {
+    draggingPiece = null;
     
     pieceElement.style.removeProperty("transform");
     pieceElement.style.removeProperty("z-index");
@@ -113,14 +123,14 @@ function handlePieceMouseUp(e) {
 function handlePieceDrag(e) {
   if (mouseDown) {
     const pieceElement = e.target;
-    dragging = true;
+    draggingPiece = pieceElement;
 
     let translateX = e.clientX - boardRect.left - (pieceDivWidth / 2);
     translateX *= 800 / boardWidth;
     let translateY = e.clientY - boardRect.top - (pieceDivWidth / 2);
     translateY *= 800 / boardWidth;
     pieceElement.style.transform = `translate(${translateX}%, ${translateY}%)`;
-    pieceElement.style.zIndex = "1";
+    pieceElement.style.zIndex = "2";
   }
 }
 
@@ -134,8 +144,15 @@ function handlePieceDrag(e) {
       // If so, make the move
       // If not, unselect the currently selected piece, and remove all highlights/hints
 function handleSquareMouseDown(e) {
-
+  e.preventDefault();
+  console.log(e.target);
 }
+
+function handleSquareMouseUp(e) {
+  mouseDown = false;
+  selectedPiece?.style.removeProperty("cursor");
+}
+
 
 // Returns: the square class from the DOM element
 // Parse through the classes and find it (should always be last)
