@@ -33,6 +33,22 @@ let moves = []
 // Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
 let turn;
 
+// Are we currently dragging a piece
+let mouseDown = false;
+let draggingPieceSquareClass = "";
+let dragging = false;
+
+// Get coordinates of board for drag offset correction
+const boardElement = document.getElementById("board");
+const boardRect = boardElement.getBoundingClientRect();
+const boardWidth = boardRect.right - boardRect.left;
+
+// Get piece div width for drag offset correction
+const pieceDivWidth = boardWidth / 8;
+
+// Add listener to play button
+const playButtonElement = document.getElementById("play-button");
+playButtonElement.addEventListener("click", handleClickPlay);
 
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
@@ -42,7 +58,13 @@ let turn;
 // Loop through all piece divs and register piece listeners
 // Loop through all squares and register square listeners
 function handleClickPlay() {
-
+  console.log("Play clicked");
+  const pieces = document.getElementById("pieces").children;
+  for (const piece of pieces) {
+    piece.addEventListener("mousedown", handlePieceMouseDown);
+    piece.addEventListener("mouseup", handlePieceMouseUp);
+    piece.addEventListener("mousemove", handlePieceDrag);
+  }
 }
 
 // Resets the game to its initial state, unregistering ALL listeners for the board
@@ -59,7 +81,9 @@ function handleClickReset() {
 // We also need to check if the piece is being dragged:
   // Attach a "mousemove" event listener to this piece while the mouse is down
 function handlePieceMouseDown(e) {
-
+  const pieceElement = e.target;
+  pieceElement.style.cursor = "grabbing";
+  mouseDown = true;
 }
 
 // If the the piece this is called for is already selected, unselect it, unhighlight
@@ -67,9 +91,19 @@ function handlePieceMouseDown(e) {
 // If we were dragging, check which square we ended up on and handle appropriately:
   // If the move is legal, make it
   // If we are on the original square, unselect the piece
-  // Otherwise, snap the piece back to the original spot (keep it selected)
+  // Otherwise, snap the piece back to the original spot (keep it selected unless original square)
 function handlePieceMouseUp(e) {
+  const pieceElement = e.target;
+  pieceElement.style.removeProperty("cursor");
 
+  if (dragging) {
+    dragging = false;
+    
+    pieceElement.style.removeProperty("transform");
+    pieceElement.style.removeProperty("z-index");
+  }
+
+  mouseDown = false;
 }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
@@ -77,7 +111,17 @@ function handlePieceMouseUp(e) {
 // We also need to keep track of which square the piece is over at any given moment,
 // probably stored in a variable
 function handlePieceDrag(e) {
+  if (mouseDown) {
+    const pieceElement = e.target;
+    dragging = true;
 
+    let translateX = e.clientX - boardRect.left - (pieceDivWidth / 2);
+    translateX *= 800 / boardWidth;
+    let translateY = e.clientY - boardRect.top - (pieceDivWidth / 2);
+    translateY *= 800 / boardWidth;
+    pieceElement.style.transform = `translate(${translateX}%, ${translateY}%)`;
+    pieceElement.style.zIndex = "1";
+  }
 }
 
 // Handles when the mouse is clicked on a square WITHOUT a piece
@@ -96,7 +140,7 @@ function handleSquareMouseDown(e) {
 // Returns: the square class from the DOM element
 // Parse through the classes and find it (should always be last)
 function getSquareClassFromDOMElement(element) {
-
+  return element.className.split(" ")[1];
 }
 
 // Return: the index of the square in the board array based on the given square class
