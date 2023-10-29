@@ -18,6 +18,16 @@ const board = []
 // so we can do things like board[0] = BLACK | ROOK
 // color can be checked by & ex. if (board[0] & WHITE)
 
+const NONE = 0;
+const KING = 1;
+const PAWN = 2;
+const KNIGHT = 3;
+const BISHOP = 4;
+const ROOK  = 5;
+const QUEEN = 6;
+const WHITE = 8;
+const BLACK = 16;
+
 
 // Move object for storing move data - start and end square indices
 function Move(startSquare, endSquare) {
@@ -31,7 +41,17 @@ function Move(startSquare, endSquare) {
 let moves = []
 
 // Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
-let turn;
+let turnCol = WHITE;
+let turnNum = 1;
+
+// Castling availability
+let whiteCastlingKS = true;
+let whiteCastlingQS = true;
+let blackCastlingKS = true;
+let blackCastlingQS = true;
+
+// En passant square - [index, turnNum]
+let enpassantSquare = [-1, 0];
 
 // Store the currently selected piece
 let selectedPiece = null;
@@ -47,6 +67,9 @@ const boardWidth = boardRect.right - boardRect.left;
 
 // Get piece div width for drag offset correction
 const pieceDivWidth = boardWidth / 8;
+
+// Store highlights div
+const highlights = document.getElementById("highlights");
 
 // Add listener to play button
 const playButtonElement = document.getElementById("play-button");
@@ -95,9 +118,19 @@ function handleClickReset() {
 function handlePieceMouseDown(e) {
   e.preventDefault();
   const pieceElement = e.target;
+  
+  //Remove old highlight
+  if (selectedPiece) {
+    unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
+  }
+
+  // Select piece
   selectedPiece = pieceElement;
   selectedPiece.style.cursor = "grabbing";
   mouseDown = true;
+
+  // Add highlight
+  highlightSquare(getSquareClassFromDOMElement(selectedPiece));
 }
 
 // If the the piece this is called for is already selected, unselect it, unhighlight
@@ -224,11 +257,14 @@ function makeMove(move) {
 
 // Following 2 functions used for (un)highlighting squares when they are selected
 function highlightSquare(squareClass) {
-
+  const highlightDiv = document.createElement("div");
+  highlightDiv.classList.add(squareClass);
+  highlights.appendChild(highlightDiv);
 }
 
 function unHighlightSquare(squareClass) {
-
+  const highlightDiv = highlights.querySelector(`.${squareClass}`);
+  highlights.removeChild(highlightDiv);
 }
 
 // Following 4 functions used for creating and removing hints when pieces are (un)selected
