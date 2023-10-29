@@ -38,7 +38,7 @@ let selectedPiece = null;
 
 // Are we currently dragging a piece
 let mouseDown = false;
-let draggingPiece = null;
+let draggingPiece = false;
 
 // Get coordinates of board for drag offset correction
 const boardElement = document.getElementById("board");
@@ -61,11 +61,15 @@ playButtonElement.addEventListener("click", handleClickPlay);
 // Loop through all squares and register square listeners
 function handleClickPlay() {
   console.log("Play clicked");
+  window.addEventListener("mousemove", handlePieceDrag);
+  // windows.addEventListener("mouseup", e => {
+  //   mouseDown = false;
+  // })
+
   const pieces = document.getElementById("pieces").children;
   for (const piece of pieces) {
     piece.addEventListener("mousedown", handlePieceMouseDown);
     piece.addEventListener("mouseup", handlePieceMouseUp);
-    piece.addEventListener("mousemove", handlePieceDrag);
   }
 
   const squares = document.getElementById("squares").children;
@@ -107,7 +111,7 @@ function handlePieceMouseUp(e) {
   pieceElement.style.removeProperty("cursor");
 
   if (draggingPiece) {
-    draggingPiece = null;
+    draggingPiece = false;
     
     pieceElement.style.removeProperty("transform");
     pieceElement.style.removeProperty("z-index");
@@ -122,15 +126,14 @@ function handlePieceMouseUp(e) {
 // probably stored in a variable
 function handlePieceDrag(e) {
   if (mouseDown) {
-    const pieceElement = e.target;
-    draggingPiece = pieceElement;
+    draggingPiece = true;
 
     let translateX = e.clientX - boardRect.left - (pieceDivWidth / 2);
     translateX *= 800 / boardWidth;
     let translateY = e.clientY - boardRect.top - (pieceDivWidth / 2);
     translateY *= 800 / boardWidth;
-    pieceElement.style.transform = `translate(${translateX}%, ${translateY}%)`;
-    pieceElement.style.zIndex = "2";
+    selectedPiece.style.transform = `translate(${translateX}%, ${translateY}%)`;
+    selectedPiece.style.zIndex = "2";
   }
 }
 
