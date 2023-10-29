@@ -57,7 +57,7 @@ let enpassantSquare = [-1, 0];
 let selectedPiece = null;
 
 // Are we currently dragging a piece
-let mouseDown = false;
+let mouseDownOnPiece = false;
 let draggingPiece = false;
 
 // Get coordinates of board for drag offset correction
@@ -68,8 +68,12 @@ const boardWidth = boardRect.right - boardRect.left;
 // Get piece div width for drag offset correction
 const pieceDivWidth = boardWidth / 8;
 
-// Store highlights div
+// Store divs for board information
+const squares = document.getElementById("squares");
 const highlights = document.getElementById("highlights");
+const pieces = document.getElementById("pieces");
+const moveHints = document.getElementById("move-hints");
+const captureHints = document.getElementById("capture-hints");
 
 // Add listener to play button
 const playButtonElement = document.getElementById("play-button");
@@ -86,18 +90,13 @@ function handleClickPlay() {
   console.log("Play clicked");
   window.addEventListener("mousemove", handlePieceDrag);
   window.addEventListener("mouseup", handlePieceDragMouseUp);
-  // windows.addEventListener("mouseup", e => {
-  //   mouseDown = false;
-  // })
 
-  const pieces = document.getElementById("pieces").children;
-  for (const piece of pieces) {
+  for (const piece of pieces.children) {
     piece.addEventListener("mousedown", handlePieceMouseDown);
     piece.addEventListener("mouseup", handlePieceMouseUp);
   }
 
-  const squares = document.getElementById("squares").children;
-  for (const square of squares) {
+  for (const square of squares.children) {
     square.addEventListener("mousedown", handleSquareMouseDown);
   }
 }
@@ -119,7 +118,7 @@ function handlePieceMouseDown(e) {
   e.preventDefault();
   const pieceElement = e.target;
   
-  //Remove old highlight
+  // Remove old highlight
   if (selectedPiece) {
     unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
   }
@@ -127,7 +126,7 @@ function handlePieceMouseDown(e) {
   // Select piece
   selectedPiece = pieceElement;
   selectedPiece.style.cursor = "grabbing";
-  mouseDown = true;
+  mouseDownOnPiece = true;
 
   // Add highlight
   highlightSquare(getSquareClassFromDOMElement(selectedPiece));
@@ -150,7 +149,7 @@ function handlePieceMouseUp(e) {
   //   pieceElement.style.removeProperty("z-index");
   // }
 
-  // mouseDown = false;
+  // mouseDownOnPiece = false;
 }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
@@ -158,7 +157,7 @@ function handlePieceMouseUp(e) {
 // We also need to keep track of which square the piece is over at any given moment,
 // probably stored in a variable
 function handlePieceDrag(e) {
-  if (mouseDown) {
+  if (mouseDownOnPiece) {
     draggingPiece = true;
 
     let translateX = e.clientX - boardRect.left - (pieceDivWidth / 2);
@@ -177,7 +176,7 @@ function handlePieceDrag(e) {
 }
 
 function handlePieceDragMouseUp(e) {
-  selectedPiece.style.removeProperty("cursor");
+  selectedPiece?.style.removeProperty("cursor");
 
   if (draggingPiece) {
     draggingPiece = false;
@@ -186,7 +185,7 @@ function handlePieceDragMouseUp(e) {
     selectedPiece.style.removeProperty("z-index");
   }
 
-  mouseDown = false;
+  mouseDownOnPiece = false;
 }
 
 // Handles when the mouse is clicked on a square WITHOUT a piece
@@ -224,14 +223,83 @@ function getIndexFromMouseCoords(x, y) {
 // Returns: the square class from an index in the board array
 // i.e. index 0 -> "square-11"
 function getSquareClassFromIndex(index) {
-
+  const file = index % 8 + 1;
+  const rank = Math.floor(index / 8) + 1;
+  return `square-${file}${rank}`;
 }
 
 // Resets the board in the UI
 // Remove all the elements and re-add the initial ones to make sure we remove all
 // registered listeners
 function resetGame() {
+  // Clear all board and UI information
+  clearAllChildren(highlights);
+  clearAllChildren(pieces);
+  clearAllChildren(moveHints);
+  clearAllChildren(captureHints);
+  board.fill(NONE);
+  whiteCastlingKS = true;
+  whiteCastlingQS = true;
+  blackCastlingKS = true;
+  blackCastlingQS = true;
+  turnCol = WHITE;
+  turnNum = 1;
+  enpassantSquare = [-1, 0];
+  selectedPiece = null;
 
+  // Remove listeners
+  window.removeEventListener("mousemove", handlePieceDrag);
+  window.removeEventListener("mouseup", handlePieceDragMouseUp);
+  for (const square of squares.children) {
+    square.removeEventListener("mousedown", handleSquareMouseDown);
+  }
+
+  // Reset board and UI
+  const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+
+  const pieceTypes = {
+    'k': KING, 'p': PAWN, 'n': KNIGHT, 'b': BISHOP, 'r': ROOK, 'q': QUEEN
+  }
+
+  let file = 0;
+  let rank = 7;
+
+  for (const symbol of startFEN) {
+    if (symbol == '/') {
+      file = 0;
+      rank--;
+    }
+    else {
+      if (parseInt(symbol)) {
+        file += parseInt(symbol);
+      }
+      else {
+        // Get info about piece
+        const pieceColor = (symbol == symbol.toUpperCase()) ? WHITE : BLACK;
+        const pieceColorChar = (pieceColor == WHITE) ? "w" : "b";
+        const pieceType = pieceTypes[symbol.toLowerCase()];
+        const index = rank * 8 + file;
+
+        // Add to board array
+        board[index] = pieceType | pieceColor;
+
+        // Add to pieces div for UI
+        const pieceDiv = document.createElement("div");
+        pieceDiv.classList.add(`${pieceColorChar}${symbol.toLowerCase()}`);
+        pieceDiv.classList.add(getSquareClassFromIndex(index));
+        pieces.appendChild(pieceDiv);
+
+        file++;
+      }
+    }
+  }
+  
+}
+
+function clearAllChildren(parent) {
+  while (parent.firstChild) {
+    parent.removeChild(parent.lastChild);
+  }
 }
 
 // Generates a list of all legal moves for the current board position
