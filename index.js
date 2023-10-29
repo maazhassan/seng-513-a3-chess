@@ -56,6 +56,9 @@ let enpassantSquare = [-1, 0];
 // Store the currently selected piece
 let selectedPiece = null;
 
+// Did we click on a piece that was selected (unselect if we mouseup on it again)
+let clickedSelected = false;
+
 // Are we currently dragging a piece
 let mouseDownOnPiece = false;
 let draggingPiece = false;
@@ -89,11 +92,11 @@ playButtonElement.addEventListener("click", handleClickPlay);
 function handleClickPlay() {
   console.log("Play clicked");
   window.addEventListener("mousemove", handlePieceDrag);
-  window.addEventListener("mouseup", handlePieceDragMouseUp);
+  window.addEventListener("mouseup", handlePieceMouseUp);
 
   for (const piece of pieces.children) {
     piece.addEventListener("mousedown", handlePieceMouseDown);
-    piece.addEventListener("mouseup", handlePieceMouseUp);
+    // piece.addEventListener("mouseup", handlePieceMouseUp);
   }
 
   for (const square of squares.children) {
@@ -118,6 +121,10 @@ function handlePieceMouseDown(e) {
   e.preventDefault();
   const pieceElement = e.target;
   
+  if (pieceElement == selectedPiece) {
+    clickedSelected = true;
+  }
+
   // Remove old highlight
   if (selectedPiece) {
     unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
@@ -138,7 +145,8 @@ function handlePieceMouseDown(e) {
   // If the move is legal, make it
   // If we are on the original square, unselect the piece
   // Otherwise, snap the piece back to the original spot (keep it selected unless original square)
-function handlePieceMouseUp(e) {
+// function handlePieceMouseUp(e) {
+  // console.log("piece mouse up");
   // const pieceElement = e.target;
   // pieceElement.style.removeProperty("cursor");
 
@@ -150,7 +158,7 @@ function handlePieceMouseUp(e) {
   // }
 
   // mouseDownOnPiece = false;
-}
+// }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
 // update the piece position in real time to follow the mouse
@@ -175,16 +183,37 @@ function handlePieceDrag(e) {
   }
 }
 
-function handlePieceDragMouseUp(e) {
+function handlePieceMouseUp(e) {
   selectedPiece?.style.removeProperty("cursor");
+  selectedPiece?.style.removeProperty("transform");
+  selectedPiece?.style.removeProperty("z-index");
 
-  if (draggingPiece) {
-    draggingPiece = false;
-    
-    selectedPiece.style.removeProperty("transform");
-    selectedPiece.style.removeProperty("z-index");
+  // Get the square we are on if we're in the board somewhere, otherwise null
+  let squareElement = null;
+  if (e.clientX < boardRect.right && e.clientX > boardRect.left && 
+      e.clientY > boardRect.top && e.clientY <  boardRect.bottom) {
+    squareElement = getSquareElementFromMouseCoords(e.clientX, e.clientY);
   }
 
+  // console.log(clickedSelected);
+  // console.log(squareElement);
+  // console.log(e.target);
+
+  // If we're on a square in the board
+  if (squareElement) {
+    // If we clicked the already selected piece, and we're on its original square, unselect
+    if (clickedSelected && getSquareClassFromDOMElement(e.target) == getSquareClassFromDOMElement(squareElement)) {
+      //TODO: unselect function call
+      unHighlightSquare(getSquareClassFromDOMElement(e.target));
+      selectedPiece = null;
+    }
+    else {
+      // check if the move is legal and make it
+    }
+  }
+
+  draggingPiece = false;
+  clickedSelected = false;
   mouseDownOnPiece = false;
 }
 
@@ -205,7 +234,8 @@ function handleSquareMouseDown(e) {
 // Returns: the square class from the DOM element
 // Parse through the classes and find it (should always be last)
 function getSquareClassFromDOMElement(element) {
-  return element.className.split(" ")[1];
+  const classArr = element.className.split(" ");
+  return classArr[classArr.length - 1];
 }
 
 // Return: the index of the square in the board array based on the given square class
@@ -218,6 +248,20 @@ function getIndexFromSquareClass(squareClass) {
 // screen coordinates - used for dragging
 function getIndexFromMouseCoords(x, y) {
 
+}
+
+// Returns: the square DOM element at the given screen coordinates
+// Make sure the cursor is inside the board before calling
+function getSquareElementFromMouseCoords(x, y) {
+  const elements = document.elementsFromPoint(x, y);
+  return elements.filter(e => {
+    const classArr = e.className.split(" ");
+    for (const clazz of classArr) {
+      if (clazz == "square-dark" || clazz == "square-light") {
+        return e;
+      }
+    }
+  })[0];
 }
 
 // Returns: the square class from an index in the board array
@@ -354,5 +398,10 @@ function removeCaptureHint(squareClass) {
 
 // Adds the tiny picture of a captured piece on the appropriate player's side of the UI
 function addCapturedPiece(piece) {
+
+}
+
+// Unselect the currently selected piece
+function unSelectPiece() {
 
 }
