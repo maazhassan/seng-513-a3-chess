@@ -62,6 +62,7 @@ playButtonElement.addEventListener("click", handleClickPlay);
 function handleClickPlay() {
   console.log("Play clicked");
   window.addEventListener("mousemove", handlePieceDrag);
+  window.addEventListener("mouseup", handlePieceDragMouseUp);
   // windows.addEventListener("mouseup", e => {
   //   mouseDown = false;
   // })
@@ -75,7 +76,6 @@ function handleClickPlay() {
   const squares = document.getElementById("squares").children;
   for (const square of squares) {
     square.addEventListener("mousedown", handleSquareMouseDown);
-    square.addEventListener("mouseup", handleSquareMouseUp);
   }
 }
 
@@ -107,17 +107,17 @@ function handlePieceMouseDown(e) {
   // If we are on the original square, unselect the piece
   // Otherwise, snap the piece back to the original spot (keep it selected unless original square)
 function handlePieceMouseUp(e) {
-  const pieceElement = e.target;
-  pieceElement.style.removeProperty("cursor");
+  // const pieceElement = e.target;
+  // pieceElement.style.removeProperty("cursor");
 
-  if (draggingPiece) {
-    draggingPiece = false;
+  // if (draggingPiece) {
+  //   draggingPiece = false;
     
-    pieceElement.style.removeProperty("transform");
-    pieceElement.style.removeProperty("z-index");
-  }
+  //   pieceElement.style.removeProperty("transform");
+  //   pieceElement.style.removeProperty("z-index");
+  // }
 
-  mouseDown = false;
+  // mouseDown = false;
 }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
@@ -130,11 +130,30 @@ function handlePieceDrag(e) {
 
     let translateX = e.clientX - boardRect.left - (pieceDivWidth / 2);
     translateX *= 800 / boardWidth;
+    translateX = translateX < -50 ? -50 : translateX;
+    translateX = translateX > 750 ? 750 : translateX;
+
     let translateY = e.clientY - boardRect.top - (pieceDivWidth / 2);
     translateY *= 800 / boardWidth;
+    translateY = translateY < -50 ? -50 : translateY;
+    translateY = translateY > 750 ? 750 : translateY;
+
     selectedPiece.style.transform = `translate(${translateX}%, ${translateY}%)`;
     selectedPiece.style.zIndex = "2";
   }
+}
+
+function handlePieceDragMouseUp(e) {
+  selectedPiece.style.removeProperty("cursor");
+
+  if (draggingPiece) {
+    draggingPiece = false;
+    
+    selectedPiece.style.removeProperty("transform");
+    selectedPiece.style.removeProperty("z-index");
+  }
+
+  mouseDown = false;
 }
 
 // Handles when the mouse is clicked on a square WITHOUT a piece
@@ -150,12 +169,6 @@ function handleSquareMouseDown(e) {
   e.preventDefault();
   console.log(e.target);
 }
-
-function handleSquareMouseUp(e) {
-  mouseDown = false;
-  selectedPiece?.style.removeProperty("cursor");
-}
-
 
 // Returns: the square class from the DOM element
 // Parse through the classes and find it (should always be last)
