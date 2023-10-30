@@ -6,7 +6,7 @@
 
 // Array to represent the boardstate, 1D is probably fine
 // Order: bottom-left to top-right
-const board = []
+const board = new Array(64);
 
 // Need to create some sort of encoding to represent pieces in the array
 // Something like:
@@ -81,6 +81,10 @@ const captureHints = document.getElementById("capture-hints");
 // Add listener to play button
 const playButtonElement = document.getElementById("play-button");
 playButtonElement.addEventListener("click", handleClickPlay);
+const mouseEnterReset = () => playButtonElement.style.backgroundColor = "var(--reset-button-hover)";
+const mouseLeaveReset = () => playButtonElement.style.backgroundColor = "var(--reset-button)";
+
+resetGame();
 
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
@@ -90,7 +94,16 @@ playButtonElement.addEventListener("click", handleClickPlay);
 // Loop through all piece divs and register piece listeners
 // Loop through all squares and register square listeners
 function handleClickPlay() {
-  console.log("Play clicked");
+  // Change button style and register reset listener
+  playButtonElement.style.backgroundColor = "var(--reset-button)";
+  playButtonElement.style.boxShadow = "3px 3px var(--reset-button-shadow)";
+  playButtonElement.addEventListener("mouseenter", mouseEnterReset);
+  playButtonElement.addEventListener("mouseleave", mouseLeaveReset);
+  playButtonElement.removeEventListener("click", handleClickPlay);
+  playButtonElement.addEventListener("click", handleClickReset);
+  playButtonElement.innerText = "Reset";
+  
+  // Add listeners for window and board elements
   window.addEventListener("mousemove", handlePieceDrag);
   window.addEventListener("mouseup", handlePieceMouseUp);
 
@@ -107,7 +120,15 @@ function handleClickPlay() {
 // Resets the game to its initial state, unregistering ALL listeners for the board
 // Also changes the reset button back to being the green play button, swap the callbacks
 function handleClickReset() {
-
+  // Change style back to play and register play listener
+  playButtonElement.removeEventListener("mouseenter", mouseEnterReset);
+  playButtonElement.removeEventListener("mouseleave", mouseLeaveReset);
+  playButtonElement.removeEventListener("click", handleClickReset);
+  playButtonElement.addEventListener("click", handleClickPlay);
+  playButtonElement.style.removeProperty("background-color");
+  playButtonElement.style.removeProperty("box-shadow")
+  playButtonElement.innerText = "Play";
+  resetGame();
 }
 
 // Handle when a piece is clicked, highlighting the square it's on and also the
@@ -266,7 +287,7 @@ function resetGame() {
 
   // Remove listeners
   window.removeEventListener("mousemove", handlePieceDrag);
-  window.removeEventListener("mouseup", handlePieceDragMouseUp);
+  window.removeEventListener("mouseup", handlePieceMouseUp);
   for (const square of squares.children) {
     square.removeEventListener("mousedown", handleSquareMouseDown);
   }
