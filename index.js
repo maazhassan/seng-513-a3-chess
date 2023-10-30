@@ -28,6 +28,9 @@ const QUEEN = 6;
 const WHITE = 8;
 const BLACK = 16;
 
+// Constants for easier move generation
+const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, E, S, W, NW, SE, NE, SW
+const numSquaresToEdge = []; // 2D, each element is an array of size 8
 
 // Move object for storing move data - start and end square indices
 function Move(startSquare, endSquare) {
@@ -51,7 +54,7 @@ let blackCastlingKS = true;
 let blackCastlingQS = true;
 
 // En passant square - [index, turnNum]
-let enpassantSquare = [-1, 0];
+let enpassantSquare = [0, 0];
 
 // Store the currently selected piece
 let selectedPiece = null;
@@ -85,6 +88,7 @@ const mouseEnterReset = () => playButtonElement.style.backgroundColor = "var(--r
 const mouseLeaveReset = () => playButtonElement.style.backgroundColor = "var(--reset-button)";
 
 resetGame();
+precomputeMoveData();
 
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
@@ -400,4 +404,26 @@ function unSelectPiece() {
   unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
   selectedPiece = null;
   // TODO: remove all hints on the board
+}
+
+// Fills the numSqauresToEdge array with data
+function precomputeMoveData() {
+  for (let rank = 0; rank < 8; rank++) {
+    for (let file = 0; file < 8; file++) {
+      const numNorth = 7 - rank;
+      const numSouth = rank;
+      const numWest = file;
+      const numEast = 7 - file;
+
+      const index = rank * 8 + file;
+
+      numSquaresToEdge[index] = [
+        numNorth, numSouth, numWest, numEast, // orthogonal
+        Math.min(numNorth, numWest), // NW
+        Math.min(numSouth, numEast), // SE
+        Math.min(numNorth, numEast), // NE
+        Math.min(numSouth, numWest)  // SW
+      ];
+    }
+  }
 }
