@@ -27,6 +27,8 @@ const ROOK  = 5;
 const QUEEN = 6;
 const WHITE = 8;
 const BLACK = 16;
+const TYPE_MASK = 0b00111;
+const COLOR_MASK = 0b11000;
 
 // Constants for easier move generation
 const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, E, S, W, NW, SE, NE, SW
@@ -45,6 +47,7 @@ let moves = []
 
 // Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
 let turnCol = WHITE;
+let oppCol = BLACK;
 let turnNum = 1;
 
 // Castling availability
@@ -348,7 +351,45 @@ function clearAllChildren(parent) {
 // Does not return this list; instead it sets the global "moves" array to it
 // On average, a given position has 15-40 legal moves
 function generateMoves() {
+  const moves = [];
+  const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
 
+  for (let startSquare = 0; startSquare < 64; startSquare++) {
+    const piece = board[startSquare];
+    const pieceType = piece & TYPE_MASK;
+    if (piece & turnCol) {
+      // Queen, Bishop, Rook
+      if (slidingPieces.has(pieceType)) {
+        for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
+          for (let n = 0; n < numSquaresToEdge[startSquare][directionIndex]; n++) {
+            const targetSquare = startSquare + directionOffsets[directionIndex] * (n + 1);
+            const pieceOnTargetSquare = board[targetSquare];
+
+            // Blocked by one of our own pieces
+            if (pieceOnTargetSquare & turnCol) {
+              break;
+            }
+
+            moves.add(new Move(startSquare, targetSquare));
+
+            // Move is a capture
+            if (pieceOnTargetSquare & oppCol) {
+              break;
+            }
+          }
+        }
+      }
+      else if (pieceType == KNIGHT) {
+
+      }
+      else if (pieceType == PAWN) {
+
+      }
+      else { // King
+
+      }
+    }
+  }
 }
 
 // Returns: a list of all legal moves that originate at the given square index
