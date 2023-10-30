@@ -125,9 +125,8 @@ function handlePieceMouseDown(e) {
     clickedSelected = true;
   }
 
-  // Remove old highlight
   if (selectedPiece) {
-    unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
+    unSelectPiece();
   }
 
   // Select piece
@@ -138,27 +137,6 @@ function handlePieceMouseDown(e) {
   // Add highlight
   highlightSquare(getSquareClassFromDOMElement(selectedPiece));
 }
-
-// If the the piece this is called for is already selected, unselect it, unhighlight
-// the square, and remove all hints
-// If we were dragging, check which square we ended up on and handle appropriately:
-  // If the move is legal, make it
-  // If we are on the original square, unselect the piece
-  // Otherwise, snap the piece back to the original spot (keep it selected unless original square)
-// function handlePieceMouseUp(e) {
-  // console.log("piece mouse up");
-  // const pieceElement = e.target;
-  // pieceElement.style.removeProperty("cursor");
-
-  // if (draggingPiece) {
-  //   draggingPiece = false;
-    
-  //   pieceElement.style.removeProperty("transform");
-  //   pieceElement.style.removeProperty("z-index");
-  // }
-
-  // mouseDownOnPiece = false;
-// }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
 // update the piece position in real time to follow the mouse
@@ -195,17 +173,12 @@ function handlePieceMouseUp(e) {
     squareElement = getSquareElementFromMouseCoords(e.clientX, e.clientY);
   }
 
-  // console.log(clickedSelected);
-  // console.log(squareElement);
-  // console.log(e.target);
-
   // If we're on a square in the board
   if (squareElement) {
     // If we clicked the already selected piece, and we're on its original square, unselect
     if (clickedSelected && getSquareClassFromDOMElement(e.target) == getSquareClassFromDOMElement(squareElement)) {
       //TODO: unselect function call
-      unHighlightSquare(getSquareClassFromDOMElement(e.target));
-      selectedPiece = null;
+      unSelectPiece();
     }
     else {
       // check if the move is legal and make it
@@ -403,5 +376,7 @@ function addCapturedPiece(piece) {
 
 // Unselect the currently selected piece
 function unSelectPiece() {
-
+  unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
+  selectedPiece = null;
+  // TODO: remove all hints on the board
 }
