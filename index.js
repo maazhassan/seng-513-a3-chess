@@ -290,19 +290,17 @@ function getSquareClassFromIndex(index) {
 // Remove all the elements and re-add the initial ones to make sure we remove all
 // registered listeners
 function resetGame() {
-  // Clear all board and UI information
-  clearAllChildren(highlights);
-  clearAllChildren(pieces);
-  clearAllChildren(moveHints);
-  clearAllChildren(captureHints);
+  // Clear all board and game information
   board.fill(NONE);
+  moves = [];
+  turnCol = WHITE;
+  oppCol = BLACK;
+  turnNum = 1;
   whiteCastlingKS = true;
   whiteCastlingQS = true;
   blackCastlingKS = true;
   blackCastlingQS = true;
-  turnCol = WHITE;
-  turnNum = 1;
-  enpassantSquare = [-1, 0];
+  enpassantSquare = 0;
   selectedPiece = null;
 
   // Remove listeners
@@ -322,6 +320,7 @@ function resetGame() {
   let file = 0;
   let rank = 7;
 
+  // Board
   for (const symbol of startFEN) {
     if (symbol == '/') {
       file = 0;
@@ -334,23 +333,19 @@ function resetGame() {
       else {
         // Get info about piece
         const pieceColor = (symbol == symbol.toUpperCase()) ? WHITE : BLACK;
-        const pieceColorChar = (pieceColor == WHITE) ? "w" : "b";
         const pieceType = pieceTypes[symbol.toLowerCase()];
         const index = rank * 8 + file;
 
         // Add to board array
         board[index] = pieceType | pieceColor;
 
-        // Add to pieces div for UI
-        const pieceDiv = document.createElement("div");
-        pieceDiv.classList.add(`${pieceColorChar}${symbol.toLowerCase()}`);
-        pieceDiv.classList.add(getSquareClassFromIndex(index));
-        pieces.appendChild(pieceDiv);
-
         file++;
       }
     }
   }
+
+  // UI
+  updateUIFromBoard();
   
 }
 
@@ -444,6 +439,8 @@ function makeMove(move) {
   const movePiece = board[startSquare];
   const movePieceType = getPieceType(movePiece);
   const capturedPieceType = getPieceType(board[endSquare]);
+
+  const indices = [] // the indices involved in this move (used for updating)
 
   // Handle captures
 
@@ -543,6 +540,51 @@ function getPieceType(piece) {
   return piece & TYPE_MASK;
 }
 
-// function updateUIFromBoard() {
+function getPieceColor(piece) {
+  return piece & COLOR_MASK;
+}
 
-// }
+function updateUIFromBoard(indices = "all") {
+  clearAllChildren(highlights);
+  clearAllChildren(moveHints);
+  clearAllChildren(captureHints);
+
+  if (indices == "all") {
+    clearAllChildren(pieces);
+    for (let index = 0; index < 64; index++) {
+      const piece = board[index];
+      if (piece) {
+        addPieceDivToBoardAtIndex(piece, index);
+      }
+    }
+  }
+  else {
+    for (index of indices) {
+      const piece = board[index];
+      const squareClass = getSquareClassFromIndex(index);
+      const oldPieceDiv = pieces.querySelector(`.${squareClass}`);
+      pieces.removeChild(oldPieceDiv);
+
+      if (piece) {
+        addPieceDivToBoardAtIndex(piece, index);
+      }
+    }
+  }
+}
+
+// This function does not check if a piece is already on the square, check before calling
+function addPieceDivToBoardAtIndex(piece, index) {
+  const pieceSymbols = {
+    [KING]: 'k', [PAWN]: 'p', [KNIGHT]: 'n', [BISHOP]: 'b', [ROOK]: 'r', [QUEEN]: 'q'
+  }
+  
+  const pieceType = getPieceType(piece);
+  const pieceColor = getPieceColor(piece);
+  const pieceColorChar = (pieceColor == WHITE) ? 'w' : 'b';
+  const pieceSymbol = pieceSymbols[pieceType];
+
+  const pieceDiv = document.createElement("div");
+  pieceDiv.classList.add(`${pieceColorChar}${pieceSymbol}`);
+  pieceDiv.classList.add(getSquareClassFromIndex(index));
+  pieces.appendChild(pieceDiv);
+}
