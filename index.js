@@ -34,10 +34,17 @@ const COLOR_MASK = 0b11000;
 const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, E, S, W, NW, SE, NE, SW
 const numSquaresToEdge = []; // 2D, each element is an array of size 8
 
+// Flags for special move types
+const MOVE_FLAG_PROMOTION = 1;
+const MOVE_FLAG_ENPASSANT = 2;
+const MOVE_FLAG_PAWN_TWO = 3;
+const MOVE_FLAG_CASTLING = 4;
+
 // Move object for storing move data - start and end square indices
-function Move(startSquare, endSquare) {
+function Move(startSquare, endSquare, flag = 0) {
   this.startSquare = startSquare;
   this.endSquare = endSquare;
+  this.flag = flag;
 }
 
 // Array that stores all the valid moves for the current position
@@ -56,8 +63,8 @@ let whiteCastlingQS = true;
 let blackCastlingKS = true;
 let blackCastlingQS = true;
 
-// En passant square - [index, turnNum]
-let enpassantSquare = [0, 0];
+// En passant square index (0 can be used as none, because 0 is impossible)
+let enpassantSquare = 0;
 
 // Store the currently selected piece
 let selectedPiece = null;
@@ -83,6 +90,8 @@ const highlights = document.getElementById("highlights");
 const pieces = document.getElementById("pieces");
 const moveHints = document.getElementById("move-hints");
 const captureHints = document.getElementById("capture-hints");
+
+const menuText = document.querySelector("#menu > span");
 
 // Add listener to play button
 const playButtonElement = document.getElementById("play-button");
@@ -122,6 +131,9 @@ function handleClickPlay() {
   for (const square of squares.children) {
     square.addEventListener("mousedown", handleSquareMouseDown);
   }
+
+  menuText.innerText = "Turn White";
+  moves = generateMoves();
 }
 
 // Resets the game to its initial state, unregistering ALL listeners for the board
@@ -135,6 +147,7 @@ function handleClickReset() {
   playButtonElement.style.removeProperty("background-color");
   playButtonElement.style.removeProperty("box-shadow")
   playButtonElement.innerText = "Play";
+  menuText.innerText = "Welcome!";
   resetGame();
 }
 
@@ -259,7 +272,7 @@ function getSquareElementFromMouseCoords(x, y) {
     const classArr = e.className.split(" ");
     for (const clazz of classArr) {
       if (clazz == "square-dark" || clazz == "square-light") {
-        return e;
+        return true;
       }
     }
   })[0];
@@ -348,29 +361,29 @@ function clearAllChildren(parent) {
 }
 
 // Generates a list of all legal moves for the current board position
-// Does not return this list; instead it sets the global "moves" array to it
-// On average, a given position has 15-40 legal moves
+// Returns: a list of all legal moves
 function generateMoves() {
   const moves = [];
   const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
 
   for (let startSquare = 0; startSquare < 64; startSquare++) {
     const piece = board[startSquare];
-    const pieceType = piece & TYPE_MASK;
-    if (piece & turnCol) {
-      // Queen, Bishop, Rook
-      if (slidingPieces.has(pieceType)) {
-        for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
+    const pieceType = getPieceType(piece);
+    if (pieceIsTurnColor(piece)) {
+      if (slidingPieces.has(pieceType)) { // Queen, Bishop, Rook
+        const startDirIndex = pieceType == BISHOP ? 4 : 0;
+        const endDirIndex = pieceType == ROOK ? 4 : 8;
+        for (let directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++) {
           for (let n = 0; n < numSquaresToEdge[startSquare][directionIndex]; n++) {
             const targetSquare = startSquare + directionOffsets[directionIndex] * (n + 1);
             const pieceOnTargetSquare = board[targetSquare];
 
             // Blocked by one of our own pieces
-            if (pieceOnTargetSquare & turnCol) {
+            if (pieceIsTurnColor(pieceOnTargetSquare)) {
               break;
             }
 
-            moves.add(new Move(startSquare, targetSquare));
+            moves.push(new Move(startSquare, targetSquare));
 
             // Move is a capture
             if (pieceOnTargetSquare & oppCol) {
@@ -383,13 +396,35 @@ function generateMoves() {
 
       }
       else if (pieceType == PAWN) {
+        const pawnOffset = turnCol == WHITE ? 8 : -8; // Which direction is forward?
+        const startRank = turnCol == WHITE ? 1 : 6;
+        const promotionRank = turnCol == WHITE ? 7 : 0;
+        const rank = Math.floor(startSquare / 8);
+        const pawnAttackDirectionIndex = [[4, 6], [7, 5]]; // Index into directionOffsets
+        const squareOneForward = startSquare + pawnOffset;
 
+        if (board[squareOneForward] == NONE) {
+          if (rank == promotionRank - 1) { // next move is promotion
+            moves.push(new Move(startSquare, squareOneForward, MOVE_FLAG_PROMOTION));
+          }
+          else {
+            moves.push(new Move(startSquare, squareOneForward));
+          }
+
+          if (rank == startRank) { // can move 1 or 2 squares
+            const squareTwoForward = squareOneForward + pawnOffset;
+            if (board[squareTwoForward] == NONE) {
+              moves.push(new Move(startSquare, squareTwoForward, MOVE_FLAG_PAWN_TWO));
+            }
+          }
+        }
       }
       else { // King
 
       }
     }
   }
+  return moves;
 }
 
 // Returns: a list of all legal moves that originate at the given square index
@@ -403,7 +438,38 @@ function getMovesStartingAtSquare(square) {
 // If this move puts the other player in check, keep track of that
 // Switches the current player
 function makeMove(move) {
+  const { startSquare, endSquare, flag } = move;
 
+  // Get info about pieces involved
+  const movePiece = board[startSquare];
+  const movePieceType = getPieceType(movePiece);
+  const capturedPieceType = getPieceType(board[endSquare]);
+
+  // Handle captures
+
+  // Handle promotion
+
+  // Handle castling
+
+  // Handle en-passant
+
+  // Move pieces in board array
+  board[endSquare] = movePiece;
+  board[startSquare] = NONE;
+
+  // Update UI
+
+  // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
+
+  // Update game state
+  const tempCol = turnCol;
+  turnCol = oppCol;
+  oppCol = tempCol;
+  turnNum++;
+  menuText.innerText = `Turn ${turnCol == WHITE ? "White" : "Black"}`;
+
+  // Generate new moves list
+  moves = generateMoves();
 }
 
 // Following 2 functions used for (un)highlighting squares when they are selected
@@ -468,3 +534,15 @@ function precomputeMoveData() {
     }
   }
 }
+
+function pieceIsTurnColor(piece) {
+  return piece & turnCol;
+}
+
+function getPieceType(piece) {
+  return piece & TYPE_MASK;
+}
+
+// function updateUIFromBoard() {
+
+// }
