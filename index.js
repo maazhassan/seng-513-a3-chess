@@ -8,16 +8,7 @@
 // Order: bottom-left to top-right
 const board = new Array(64);
 
-// Need to create some sort of encoding to represent pieces in the array
-// Something like:
-// const NONE  = 0
-// const KING = 1
-// const PAWN = 2
-// ...
-// we can use binary modifiers 8 and 16 for black/white, since we have 7 values otherwise
-// so we can do things like board[0] = BLACK | ROOK
-// color can be checked by & ex. if (board[0] & WHITE)
-
+// Piece encodings
 const NONE = 0;
 const KING = 1;
 const PAWN = 2;
@@ -102,6 +93,9 @@ const mouseLeaveReset = () => playButtonElement.style.backgroundColor = "var(--r
 resetGame();
 precomputeMoveData();
 
+const playSound = new Audio("./assets/play_button.wav");
+const moveSound = new Audio("./assets/piece_moving.wav");
+
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
   // Change the appearance by modifying its color and text
@@ -133,6 +127,7 @@ function handleClickPlay() {
   }
 
   menuText.innerText = "Turn White";
+  playSound.play();
   moves = generateMoves();
 }
 
@@ -148,6 +143,7 @@ function handleClickReset() {
   playButtonElement.style.removeProperty("box-shadow")
   playButtonElement.innerText = "Play";
   menuText.innerText = "Welcome!";
+  playSound.play();
   resetGame();
 }
 
@@ -156,8 +152,6 @@ function handleClickReset() {
 // If a piece is already selected while this fires:
   // If the clicked piece is an enemy piece:
     // If the move is legal, make it (call makeMove)
-// We also need to check if the piece is being dragged:
-  // Attach a "mousemove" event listener to this piece while the mouse is down
 function handlePieceMouseDown(e) {
   e.preventDefault();
   const pieceElement = e.target;
@@ -167,6 +161,18 @@ function handlePieceMouseDown(e) {
   }
 
   if (selectedPiece) {
+    const squareClass = getSquareClassFromDOMElement(pieceElement);
+    const index = getIndexFromSquareClass(squareClass);
+    const piece = board[index];
+    if (!pieceIsTurnColor(piece)) {
+      const startSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(selectedPiece));
+      const move = getMoveFromMoves(startSquareI, index);
+      if (move) {
+        makeMove(move);
+        return;
+      }
+    }
+
     unSelectPiece();
   }
 
@@ -453,6 +459,7 @@ function getMovesStartingAtSquare(square) {
 // Switches the current player
 function makeMove(move) {
   const { startSquare, endSquare, flag } = move;
+  moveSound.play();
 
   // Get info about pieces involved
   const movePiece = board[startSquare];
