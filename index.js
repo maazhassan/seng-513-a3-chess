@@ -460,12 +460,15 @@ function makeMove(move) {
   const capturedPieceType = getPieceType(board[endSquare]);
 
   // Handle captures
+  if (capturedPieceType) {
+    removePieceFromUI(endSquare);
+  }
 
   // Handle promotion
 
-  // Handle castling - add indices and set flags
+  // Handle castling - set global flags
 
-  // Handle en-passant - add indices
+  // Handle en-passant
 
   // Move pieces in board array
   board[endSquare] = movePiece;
@@ -585,7 +588,9 @@ function updatePieceSquareClass(oldSquare, newSquare) {
 
 // For captures
 function removePieceFromUI(index) {
-
+  const squareClass = getSquareClassFromIndex(index);
+  const pieceDiv = pieces.querySelector(`.${squareClass}`);
+  pieces.removeChild(pieceDiv);
 }
 
 function getMoveFromMoves(startSquare, endSquare) {
