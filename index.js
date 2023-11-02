@@ -170,13 +170,11 @@ function handlePieceMouseDown(e) {
     unSelectPiece();
   }
 
-  // Select piece
-  selectedPiece = pieceElement;
+  selectPiece(pieceElement);
+  
   selectedPiece.style.cursor = "grabbing";
   mouseDownOnPiece = true;
 
-  // Add highlight
-  highlightSquare(getSquareClassFromDOMElement(selectedPiece));
 }
 
 // Handles when the mouse is down and a piece is being dragged, we need to
@@ -203,32 +201,39 @@ function handlePieceDrag(e) {
 }
 
 function handlePieceMouseUp(e) {
-  selectedPiece?.style.removeProperty("cursor");
-  selectedPiece?.style.removeProperty("transform");
-  selectedPiece?.style.removeProperty("z-index");
-
-  // Get the square we are on if we're in the board somewhere, otherwise null
-  let squareElement = null;
-  if (e.clientX < boardRect.right && e.clientX > boardRect.left && 
-      e.clientY > boardRect.top && e.clientY <  boardRect.bottom) {
-    squareElement = getSquareElementFromMouseCoords(e.clientX, e.clientY);
-  }
-
-  // If we're on a square in the board
-  if (squareElement) {
-    // If we clicked the already selected piece, and we're on its original square, unselect
-    if (clickedSelected && getSquareClassFromDOMElement(e.target) == getSquareClassFromDOMElement(squareElement)) {
-      //TODO: unselect function call
-      unSelectPiece();
+  if (selectedPiece) {
+    selectedPiece.style.removeProperty("cursor");
+    selectedPiece.style.removeProperty("transform");
+    selectedPiece.style.removeProperty("z-index");
+  
+    // Get the square we are on if we're in the board somewhere, otherwise null
+    let squareElement = null;
+    if (e.clientX < boardRect.right && e.clientX > boardRect.left && 
+        e.clientY > boardRect.top && e.clientY <  boardRect.bottom) {
+      squareElement = getSquareElementFromMouseCoords(e.clientX, e.clientY);
     }
-    else {
-      // check if the move is legal and make it
+  
+    // If we're on a square in the board
+    if (squareElement) {
+      // If we clicked the already selected piece, and we're on its original square, unselect
+      if (clickedSelected && getSquareClassFromDOMElement(e.target) == getSquareClassFromDOMElement(squareElement)) {
+        unSelectPiece();
+      }
+      else {
+        // check if the move is legal and make it
+        const startSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(selectedPiece));
+        const endSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(squareElement));
+        const move = getMoveFromMoves(startSquareI, endSquareI);
+        if (move) {
+          makeMove(move);
+        }
+      }
     }
+  
+    draggingPiece = false;
+    clickedSelected = false;
+    mouseDownOnPiece = false;
   }
-
-  draggingPiece = false;
-  clickedSelected = false;
-  mouseDownOnPiece = false;
 }
 
 // Handles when the mouse is clicked on a square WITHOUT a piece
@@ -242,7 +247,17 @@ function handlePieceMouseUp(e) {
       // If not, unselect the currently selected piece, and remove all highlights/hints
 function handleSquareMouseDown(e) {
   e.preventDefault();
-  console.log(e.target);
+  if (selectedPiece) {
+    const startSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(selectedPiece));
+    const endSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(e.target));
+    const move = getMoveFromMoves(startSquareI, endSquareI);
+    if (move) {
+      makeMove(move);
+    }
+    else {
+      unSelectPiece();
+    }
+  }
 }
 
 // Returns: the square class from the DOM element
@@ -255,13 +270,10 @@ function getSquareClassFromDOMElement(element) {
 // Return: the index of the square in the board array based on the given square class
 // i.e. "square-11" -> 0
 function getIndexFromSquareClass(squareClass) {
-  
-}
-
-// Returns: the index of the square in the board array at the given
-// screen coordinates - used for dragging
-function getIndexFromMouseCoords(x, y) {
-
+  const coords = squareClass.split("-")[1];
+  const file = parseInt(coords[0]);
+  const rank = parseInt(coords[1]);
+  return 8 * (rank - 1) + (file - 1);
 }
 
 // Returns: the square DOM element at the given screen coordinates
@@ -291,6 +303,10 @@ function getSquareClassFromIndex(index) {
 // registered listeners
 function resetGame() {
   // Clear all board and game information
+  clearAllChildren(highlights);
+  clearAllChildren(moveHints);
+  clearAllChildren(captureHints);
+  clearAllChildren(pieces);
   board.fill(NONE);
   moves = [];
   turnCol = WHITE;
@@ -333,20 +349,23 @@ function resetGame() {
       else {
         // Get info about piece
         const pieceColor = (symbol == symbol.toUpperCase()) ? WHITE : BLACK;
+        const pieceColorChar = (pieceColor == WHITE) ? 'w' : 'b';
         const pieceType = pieceTypes[symbol.toLowerCase()];
         const index = rank * 8 + file;
 
         // Add to board array
         board[index] = pieceType | pieceColor;
 
+        // Add to UI
+        const pieceDiv = document.createElement("div");
+        pieceDiv.classList.add(`${pieceColorChar}${symbol.toLowerCase()}`);
+        pieceDiv.classList.add(getSquareClassFromIndex(index));
+        pieces.appendChild(pieceDiv);
+
         file++;
       }
     }
   }
-
-  // UI
-  updateUIFromBoard();
-  
 }
 
 function clearAllChildren(parent) {
@@ -440,21 +459,21 @@ function makeMove(move) {
   const movePieceType = getPieceType(movePiece);
   const capturedPieceType = getPieceType(board[endSquare]);
 
-  const indices = [] // the indices involved in this move (used for updating)
-
   // Handle captures
 
   // Handle promotion
 
-  // Handle castling
+  // Handle castling - add indices and set flags
 
-  // Handle en-passant
+  // Handle en-passant - add indices
 
   // Move pieces in board array
   board[endSquare] = movePiece;
   board[startSquare] = NONE;
 
   // Update UI
+  updatePieceSquareClass(startSquare, endSquare);
+  unSelectPiece();
 
   // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
 
@@ -469,33 +488,22 @@ function makeMove(move) {
   moves = generateMoves();
 }
 
-// Following 2 functions used for (un)highlighting squares when they are selected
 function highlightSquare(squareClass) {
   const highlightDiv = document.createElement("div");
   highlightDiv.classList.add(squareClass);
   highlights.appendChild(highlightDiv);
 }
 
-function unHighlightSquare(squareClass) {
-  const highlightDiv = highlights.querySelector(`.${squareClass}`);
-  highlights.removeChild(highlightDiv);
-}
-
-// Following 4 functions used for creating and removing hints when pieces are (un)selected
 function createMoveHint(squareClass) {
-
-}
-
-function removeMoveHint(squareClass) {
-
+  const moveHintDiv = document.createElement("div");
+  moveHintDiv.classList.add(squareClass);
+  moveHints.appendChild(moveHintDiv);
 }
 
 function createCaptureHint(squareClass) {
-
-}
-
-function removeCaptureHint(squareClass) {
-
+  const captureHintDiv = document.createElement("div");
+  captureHintDiv.classList.add(squareClass);
+  captureHints.appendChild(captureHintDiv);
 }
 
 // Adds the tiny picture of a captured piece on the appropriate player's side of the UI
@@ -503,11 +511,33 @@ function addCapturedPiece(piece) {
 
 }
 
+function selectPiece(piece) {
+  selectedPiece = piece;
+  const squareClass = getSquareClassFromDOMElement(piece);
+  const index = getIndexFromSquareClass(squareClass);
+
+  highlightSquare(squareClass);
+  
+  // Move hints
+  for (const move of moves) {
+    if (move.startSquare == index) {
+      const hintSquareClass = getSquareClassFromIndex(move.endSquare);
+      if (board[move.endSquare]) {
+        createCaptureHint(hintSquareClass);
+      }
+      else {
+        createMoveHint(hintSquareClass);
+      }
+    }
+  }
+}
+
 // Unselect the currently selected piece
 function unSelectPiece() {
-  unHighlightSquare(getSquareClassFromDOMElement(selectedPiece));
   selectedPiece = null;
-  // TODO: remove all hints on the board
+  clearAllChildren(highlights);
+  clearAllChildren(moveHints);
+  clearAllChildren(captureHints);
 }
 
 // Fills the numSqauresToEdge array with data
@@ -544,47 +574,25 @@ function getPieceColor(piece) {
   return piece & COLOR_MASK;
 }
 
-function updateUIFromBoard(indices = "all") {
-  clearAllChildren(highlights);
-  clearAllChildren(moveHints);
-  clearAllChildren(captureHints);
-
-  if (indices == "all") {
-    clearAllChildren(pieces);
-    for (let index = 0; index < 64; index++) {
-      const piece = board[index];
-      if (piece) {
-        addPieceDivToBoardAtIndex(piece, index);
-      }
-    }
-  }
-  else {
-    for (index of indices) {
-      const piece = board[index];
-      const squareClass = getSquareClassFromIndex(index);
-      const oldPieceDiv = pieces.querySelector(`.${squareClass}`);
-      pieces.removeChild(oldPieceDiv);
-
-      if (piece) {
-        addPieceDivToBoardAtIndex(piece, index);
-      }
-    }
-  }
+// Changes the squareClass of the piece currently at oldSquare in the UI to newSquare
+function updatePieceSquareClass(oldSquare, newSquare) {
+  const oldSquareClass = getSquareClassFromIndex(oldSquare);
+  const newSquareClass = getSquareClassFromIndex(newSquare);
+  const pieceDiv = pieces.querySelector(`.${oldSquareClass}`);
+  pieceDiv.classList.remove(oldSquareClass);
+  pieceDiv.classList.add(newSquareClass);
 }
 
-// This function does not check if a piece is already on the square, check before calling
-function addPieceDivToBoardAtIndex(piece, index) {
-  const pieceSymbols = {
-    [KING]: 'k', [PAWN]: 'p', [KNIGHT]: 'n', [BISHOP]: 'b', [ROOK]: 'r', [QUEEN]: 'q'
-  }
-  
-  const pieceType = getPieceType(piece);
-  const pieceColor = getPieceColor(piece);
-  const pieceColorChar = (pieceColor == WHITE) ? 'w' : 'b';
-  const pieceSymbol = pieceSymbols[pieceType];
+// For captures
+function removePieceFromUI(index) {
 
-  const pieceDiv = document.createElement("div");
-  pieceDiv.classList.add(`${pieceColorChar}${pieceSymbol}`);
-  pieceDiv.classList.add(getSquareClassFromIndex(index));
-  pieces.appendChild(pieceDiv);
+}
+
+function getMoveFromMoves(startSquare, endSquare) {
+  for (const move of moves) {
+    if (move.startSquare == startSquare && move.endSquare == endSquare) {
+      return move;
+    }
+  }
+  return null;
 }
