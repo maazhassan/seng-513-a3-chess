@@ -4,10 +4,6 @@
 /* Name: Maaz Hassan */
 /* UCID: 30087059 */
 
-// Array to represent the boardstate, 1D is probably fine
-// Order: bottom-left to top-right
-const board = new Array(64);
-
 // Piece encodings
 const NONE = 0;
 const KING = 1;
@@ -43,19 +39,24 @@ function Move(startSquare, endSquare, flag = 0) {
 // Used by getMovesStartingAtSqaure
 let moves = []
 
-// Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
-let turnCol = WHITE;
-let oppCol = BLACK;
-let turnNum = 1;
+const gameState = {
+  // Array to represent the boardstate, 1D is probably fine
+  // Order: bottom-left to top-right
+  board: new Array(64),
+  // Stores who's turn it currently is, probably initialized to either WHITE or BLACK (8/16)
+  turnCol: WHITE,
+  oppCol: BLACK,
+  turnNum: 1,
+  // Castling availability
+  whiteCastlingKS: true,
+  whiteCastlingQS: true,
+  blackCastlingKS: true,
+  blackCastlingQS: true,
+  // En passant square index (0 can be used as none, because 0 is impossible)
+  enpassantSquare: 0,
+}
 
-// Castling availability
-let whiteCastlingKS = true;
-let whiteCastlingQS = true;
-let blackCastlingKS = true;
-let blackCastlingQS = true;
-
-// En passant square index (0 can be used as none, because 0 is impossible)
-let enpassantSquare = 0;
+let prevGameState = null;
 
 // Store the currently selected piece
 let selectedPiece = null;
@@ -95,6 +96,7 @@ precomputeMoveData();
 
 const playSound = new Audio("./assets/play_button.wav");
 const moveSound = new Audio("./assets/piece_moving.wav");
+const checkSound = new Audio("./assets/check.ogg");
 
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
@@ -163,7 +165,7 @@ function handlePieceMouseDown(e) {
   if (selectedPiece) {
     const squareClass = getSquareClassFromDOMElement(pieceElement);
     const index = getIndexFromSquareClass(squareClass);
-    const piece = board[index];
+    const piece = gameState.board[index];
     if (!pieceIsTurnColor(piece)) {
       const startSquareI = getIndexFromSquareClass(getSquareClassFromDOMElement(selectedPiece));
       const move = getMoveFromMoves(startSquareI, index);
@@ -313,16 +315,16 @@ function resetGame() {
   clearAllChildren(moveHints);
   clearAllChildren(captureHints);
   clearAllChildren(pieces);
-  board.fill(NONE);
+  gameState.board.fill(NONE);
   moves = [];
-  turnCol = WHITE;
-  oppCol = BLACK;
-  turnNum = 1;
-  whiteCastlingKS = true;
-  whiteCastlingQS = true;
-  blackCastlingKS = true;
-  blackCastlingQS = true;
-  enpassantSquare = 0;
+  gameState.turnCol = WHITE;
+  gameState.oppCol = BLACK;
+  gameState.turnNum = 1;
+  gameState.whiteCastlingKS = true;
+  gameState.whiteCastlingQS = true;
+  gameState.blackCastlingKS = true;
+  gameState.blackCastlingQS = true;
+  gameState.enpassantSquare = 0;
   selectedPiece = null;
 
   // Remove listeners
@@ -360,7 +362,7 @@ function resetGame() {
         const index = rank * 8 + file;
 
         // Add to board array
-        board[index] = pieceType | pieceColor;
+        gameState.board[index] = pieceType | pieceColor;
 
         // Add to UI
         const pieceDiv = document.createElement("div");
@@ -382,12 +384,14 @@ function clearAllChildren(parent) {
 
 // Generates a list of all legal moves for the current board position
 // Returns: a list of all legal moves
-function generateMoves() {
+function generateMoves(index = null) {
   const moves = [];
   const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
+  const start = index == null ? 0 : index;
+  const end = index == null ? 64 : index + 1;
 
-  for (let startSquare = 0; startSquare < 64; startSquare++) {
-    const piece = board[startSquare];
+  for (let startSquare = start; startSquare < end; startSquare++) {
+    const piece = gameState.board[startSquare];
     const pieceType = getPieceType(piece);
     if (pieceIsTurnColor(piece)) {
       if (slidingPieces.has(pieceType)) { // Queen, Bishop, Rook
@@ -396,7 +400,7 @@ function generateMoves() {
         for (let directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++) {
           for (let n = 0; n < numSquaresToEdge[startSquare][directionIndex]; n++) {
             const targetSquare = startSquare + directionOffsets[directionIndex] * (n + 1);
-            const pieceOnTargetSquare = board[targetSquare];
+            const pieceOnTargetSquare = gameState.board[targetSquare];
 
             // Blocked by one of our own pieces
             if (pieceIsTurnColor(pieceOnTargetSquare)) {
@@ -406,7 +410,7 @@ function generateMoves() {
             moves.push(new Move(startSquare, targetSquare));
 
             // Move is a capture
-            if (pieceOnTargetSquare & oppCol) {
+            if (pieceOnTargetSquare & gameState.oppCol) {
               break;
             }
           }
@@ -416,14 +420,14 @@ function generateMoves() {
 
       }
       else if (pieceType == PAWN) {
-        const pawnOffset = turnCol == WHITE ? 8 : -8; // Which direction is forward?
-        const startRank = turnCol == WHITE ? 1 : 6;
-        const promotionRank = turnCol == WHITE ? 7 : 0;
+        const pawnOffset = gameState.turnCol == WHITE ? 8 : -8; // Which direction is forward?
+        const startRank = gameState.turnCol == WHITE ? 1 : 6;
+        const promotionRank = gameState.turnCol == WHITE ? 7 : 0;
         const rank = Math.floor(startSquare / 8);
         const pawnAttackDirectionIndex = [[4, 6], [7, 5]]; // Index into directionOffsets
         const squareOneForward = startSquare + pawnOffset;
 
-        if (board[squareOneForward] == NONE) {
+        if (gameState.board[squareOneForward] == NONE) {
           if (rank == promotionRank - 1) { // next move is promotion
             moves.push(new Move(startSquare, squareOneForward, MOVE_FLAG_PROMOTION));
           }
@@ -433,7 +437,7 @@ function generateMoves() {
 
           if (rank == startRank) { // can move 1 or 2 squares
             const squareTwoForward = squareOneForward + pawnOffset;
-            if (board[squareTwoForward] == NONE) {
+            if (gameState.board[squareTwoForward] == NONE) {
               moves.push(new Move(startSquare, squareTwoForward, MOVE_FLAG_PAWN_TWO));
             }
           }
@@ -447,6 +451,10 @@ function generateMoves() {
   return moves;
 }
 
+function generateLegalMoves() {
+  const pseudoLegalMoves = generateMoves();
+}
+
 // Returns: a list of all legal moves that originate at the given square index
 // Filtered from the global moves list
 function getMovesStartingAtSquare(square) {
@@ -458,18 +466,33 @@ function getMovesStartingAtSquare(square) {
 // If this move puts the other player in check, keep track of that
 // Switches the current player
 function makeMove(move) {
+  const { startSquare, endSquare } = move;
+
+  const capturedPiece = gameState.board[endSquare];
+
+  makeMoveBackend(move);
+
+  if (capturedPiece) {
+    removePieceFromUI(endSquare);
+    addCapturedPiece(capturedPiece);
+  }
+
+  // Update UI
+  updatePieceSquareClass(startSquare, endSquare);
+  unSelectPiece();
+
+  // Generate new moves lists
+  moves = generateMoves();
+}
+
+function makeMoveBackend(move) {
   const { startSquare, endSquare, flag } = move;
-  moveSound.play();
 
   // Get info about pieces involved
-  const movePiece = board[startSquare];
-  const movePieceType = getPieceType(movePiece);
-  const capturedPieceType = getPieceType(board[endSquare]);
+  const movePiece = gameState.board[startSquare];
+
 
   // Handle captures
-  if (capturedPieceType) {
-    removePieceFromUI(endSquare);
-  }
 
   // Handle promotion
 
@@ -478,24 +501,23 @@ function makeMove(move) {
   // Handle en-passant
 
   // Move pieces in board array
-  board[endSquare] = movePiece;
-  board[startSquare] = NONE;
-
-  // Update UI
-  updatePieceSquareClass(startSquare, endSquare);
-  unSelectPiece();
+  gameState.board[endSquare] = movePiece;
+  gameState.board[startSquare] = NONE;
 
   // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
 
   // Update game state
-  const tempCol = turnCol;
-  turnCol = oppCol;
-  oppCol = tempCol;
-  turnNum++;
-  menuText.innerText = `Turn ${turnCol == WHITE ? "White" : "Black"}`;
+  const tempCol = gameState.turnCol;
+  gameState.turnCol = gameState.oppCol;
+  gameState.oppCol = tempCol;
+  gameState.turnNum++;
+  menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}`;
+}
 
-  // Generate new moves list
-  moves = generateMoves();
+function undoMoveBackend(move) {
+  const { startSquare, endSquare, flag } = move;
+
+
 }
 
 function highlightSquare(squareClass) {
@@ -532,7 +554,7 @@ function selectPiece(piece) {
   for (const move of moves) {
     if (move.startSquare == index) {
       const hintSquareClass = getSquareClassFromIndex(move.endSquare);
-      if (board[move.endSquare]) {
+      if (gameState.board[move.endSquare]) {
         createCaptureHint(hintSquareClass);
       }
       else {
@@ -573,7 +595,7 @@ function precomputeMoveData() {
 }
 
 function pieceIsTurnColor(piece) {
-  return piece & turnCol;
+  return piece & gameState.turnCol;
 }
 
 function getPieceType(piece) {
