@@ -94,9 +94,11 @@ const mouseLeaveReset = () => playButtonElement.style.backgroundColor = "var(--r
 resetGame();
 precomputeMoveData();
 
+// Sounds
 const playSound = new Audio("./assets/play_button.wav");
 const moveSound = new Audio("./assets/piece_moving.wav");
 const checkSound = new Audio("./assets/check.ogg");
+const checkmateSound = new Audio("./assets/checkmate.wav");
 
 // Initializes and runs the main game loop, and registers all the appropriate listeners
 // Change the play button to the reset button:
@@ -389,6 +391,9 @@ function generateMoves(index = null) {
   const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
   const start = index == null ? 0 : index;
   const end = index == null ? 64 : index + 1;
+  if (index != null) {
+    swapColors();
+  }
 
   for (let startSquare = start; startSquare < end; startSquare++) {
     const piece = gameState.board[startSquare];
@@ -448,6 +453,11 @@ function generateMoves(index = null) {
       }
     }
   }
+  
+  if (index != null) {
+    swapColors();
+  }
+
   return moves;
 }
 
@@ -491,10 +501,32 @@ function makeMove(move) {
   for (const func of uiFunctionList) {
     func();
   }
-  menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}`;
 
   // Generate new moves lists
   moves = generateLegalMoves();
+  
+  if (moves.length == 0) {
+    // Checkmate
+  }
+  else {
+    const movedPieceMoves = generateMoves(move.endSquare);
+    let check = false;
+    for (const move of movedPieceMoves) {
+      if (getPieceType(gameState.board[move.endSquare]) == KING) {
+        check = true;
+        break;
+      }
+    }
+    if (check) {
+      checkSound.play();
+      menuText.innerText = `Check. Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
+    }
+    else {
+      moveSound.play();
+      menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
+    }
+  }
+
 }
 
 function makeMoveBackend(move) {
@@ -529,9 +561,7 @@ function makeMoveBackend(move) {
   gameState.board[startSquare] = NONE;
 
   // Update game state
-  const tempCol = gameState.turnCol;
-  gameState.turnCol = gameState.oppCol;
-  gameState.oppCol = tempCol;
+  swapColors();
   gameState.turnNum++;
 
   uiFunctionList.push(() => updatePieceSquareClass(startSquare, endSquare));
@@ -542,6 +572,12 @@ function makeMoveBackend(move) {
 
 function undoLastMoveBackend() {
   gameState = prevGameState;
+}
+
+function swapColors() {
+  const tempCol = gameState.turnCol;
+  gameState.turnCol = gameState.oppCol;
+  gameState.oppCol = tempCol;
 }
 
 function highlightSquare(squareClass) {
