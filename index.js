@@ -130,7 +130,7 @@ function handleClickPlay() {
 
   menuText.innerText = "Turn White";
   playSound.play();
-  moves = generateMoves();
+  moves = generateLegalMoves();
 }
 
 // Resets the game to its initial state, unregistering ALL listeners for the board
@@ -456,9 +456,20 @@ function generateLegalMoves() {
   const pseudoLegalMoves = generateMoves();
   
   // Filter out pins by playing all moves and seeing if opponent can take our king
+  // Also filters moves that don't deal with the check, if there is one
   // Don't generate legal moves for enemy, because pinned pieces can still pin our pieces
   return pseudoLegalMoves.filter(move => {
-
+    makeMoveBackend(move);
+    const oppMoves = generateMoves();
+    let legal = true;
+    for (const move of oppMoves) {
+      if (getPieceType(gameState.board[move.endSquare]) == KING) {
+        legal = false;
+        break;
+      }
+    }
+    undoLastMoveBackend();
+    return legal;
   });
 }
 
@@ -483,12 +494,12 @@ function makeMove(move) {
   menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}`;
 
   // Generate new moves lists
-  moves = generateMoves();
+  moves = generateLegalMoves();
 }
 
 function makeMoveBackend(move) {
   // Save old gamestate
-  prevGameState = gameState;
+  prevGameState = structuredClone(gameState);
 
   const uiFunctionList = [];
 
@@ -527,6 +538,10 @@ function makeMoveBackend(move) {
   uiFunctionList.push(() => unSelectPiece());
 
   return uiFunctionList;
+}
+
+function undoLastMoveBackend() {
+  gameState = prevGameState;
 }
 
 function highlightSquare(squareClass) {
