@@ -36,10 +36,10 @@ function Move(startSquare, endSquare, flag = 0) {
 
 // Array that stores all the valid moves for the current position
 // Updated by generateMoves function
-// Used by getMovesStartingAtSqaure
+// Used by getMovesStartingAtSquare
 let moves = []
 
-const gameState = {
+let gameState = {
   // Array to represent the boardstate, 1D is probably fine
   // Order: bottom-left to top-right
   board: new Array(64),
@@ -382,8 +382,8 @@ function clearAllChildren(parent) {
   }
 }
 
-// Generates a list of all legal moves for the current board position
-// Returns: a list of all legal moves
+// Generates a list of all psuedo-legal moves for the current board position
+// Returns: a list of all psuedo-legal moves
 function generateMoves(index = null) {
   const moves = [];
   const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
@@ -451,8 +451,15 @@ function generateMoves(index = null) {
   return moves;
 }
 
+// Returns: a list of all legal moves
 function generateLegalMoves() {
   const pseudoLegalMoves = generateMoves();
+  
+  // Filter out pins by playing all moves and seeing if opponent can take our king
+  // Don't generate legal moves for enemy, because pinned pieces can still pin our pieces
+  return pseudoLegalMoves.filter(move => {
+
+  });
 }
 
 // Returns: a list of all legal moves that originate at the given square index
@@ -466,33 +473,36 @@ function getMovesStartingAtSquare(square) {
 // If this move puts the other player in check, keep track of that
 // Switches the current player
 function makeMove(move) {
-  const { startSquare, endSquare } = move;
-
-  const capturedPiece = gameState.board[endSquare];
-
-  makeMoveBackend(move);
-
-  if (capturedPiece) {
-    removePieceFromUI(endSquare);
-    addCapturedPiece(capturedPiece);
-  }
-
+  // Update backend
+  const uiFunctionList = makeMoveBackend(move);
+  
   // Update UI
-  updatePieceSquareClass(startSquare, endSquare);
-  unSelectPiece();
+  for (const func of uiFunctionList) {
+    func();
+  }
+  menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}`;
 
   // Generate new moves lists
   moves = generateMoves();
 }
 
 function makeMoveBackend(move) {
+  // Save old gamestate
+  prevGameState = gameState;
+
+  const uiFunctionList = [];
+
   const { startSquare, endSquare, flag } = move;
 
   // Get info about pieces involved
   const movePiece = gameState.board[startSquare];
-
+  const capturedPiece = gameState.board[endSquare];
 
   // Handle captures
+  if (capturedPiece) {
+    uiFunctionList.push(() => removePieceFromUI(endSquare));
+    uiFunctionList.push(() => addCapturedPiece(capturedPiece));
+  }
 
   // Handle promotion
 
@@ -500,24 +510,23 @@ function makeMoveBackend(move) {
 
   // Handle en-passant
 
+  // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
+
+
   // Move pieces in board array
   gameState.board[endSquare] = movePiece;
   gameState.board[startSquare] = NONE;
-
-  // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
 
   // Update game state
   const tempCol = gameState.turnCol;
   gameState.turnCol = gameState.oppCol;
   gameState.oppCol = tempCol;
   gameState.turnNum++;
-  menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}`;
-}
 
-function undoMoveBackend(move) {
-  const { startSquare, endSquare, flag } = move;
+  uiFunctionList.push(() => updatePieceSquareClass(startSquare, endSquare));
+  uiFunctionList.push(() => unSelectPiece());
 
-
+  return uiFunctionList;
 }
 
 function highlightSquare(squareClass) {
