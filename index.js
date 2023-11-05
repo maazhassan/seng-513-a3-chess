@@ -18,7 +18,7 @@ const TYPE_MASK = 0b00111;
 const COLOR_MASK = 0b11000;
 
 // Constants for easier move generation
-const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, E, S, W, NW, SE, NE, SW
+const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, S, W, E, NW, SE, NE, SW
 const numSquaresToEdge = []; // 2D, each element is an array of size 8
 
 // Flags for special move types
@@ -96,7 +96,7 @@ precomputeMoveData();
 
 // Sounds
 const playSound = new Audio("./assets/play_button.wav");
-const moveSound = new Audio("./assets/piece_moving.wav");
+const moveSound = new Audio("./assets/piece_moving.mp3");
 const checkSound = new Audio("./assets/check.ogg");
 const checkmateSound = new Audio("./assets/checkmate.wav");
 
@@ -430,8 +430,10 @@ function generateMoves(index = null) {
         const promotionRank = gameState.turnCol == WHITE ? 7 : 0;
         const rank = Math.floor(startSquare / 8);
         const pawnAttackDirectionIndex = [[4, 6], [7, 5]]; // Index into directionOffsets
+        const forwardIndex = gameState.turnCol == WHITE ? 0 : 1;
         const squareOneForward = startSquare + pawnOffset;
 
+        // Pawn forward moves
         if (gameState.board[squareOneForward] == NONE) {
           if (rank == promotionRank - 1) { // next move is promotion
             moves.push(new Move(startSquare, squareOneForward, MOVE_FLAG_PROMOTION));
@@ -444,6 +446,31 @@ function generateMoves(index = null) {
             const squareTwoForward = squareOneForward + pawnOffset;
             if (gameState.board[squareTwoForward] == NONE) {
               moves.push(new Move(startSquare, squareTwoForward, MOVE_FLAG_PAWN_TWO));
+            }
+          }
+        }
+        
+        // Pawn captures
+        for (let i = 0; i < 2; i++) {
+          // If a square exists to the diagonal
+          if (numSquaresToEdge[startSquare][pawnAttackDirectionIndex[forwardIndex][i]] > 0) {
+            const pawnCaptureDir = directionOffsets[pawnAttackDirectionIndex[forwardIndex][i]];
+            const targetSquare = startSquare + pawnCaptureDir;
+            const targetPiece = gameState.board[targetSquare];
+
+            // Regular capture
+            if (targetPiece && !pieceIsTurnColor(targetPiece)) {
+              if (rank == promotionRank - 1) { // next move is promotion
+                moves.push(new Move(startSquare, targetSquare, MOVE_FLAG_PROMOTION));
+              }
+              else {
+                moves.push(new Move(startSquare, targetSquare));
+              }
+            }
+            
+            // En passant capture
+            if (targetSquare == gameState.enpassantSquare) {
+              moves.push(new Move(startSquare, targetSquare, MOVE_FLAG_ENPASSANT));
             }
           }
         }
@@ -547,17 +574,38 @@ function makeMoveBackend(move) {
     uiFunctionList.push(() => addCapturedPiece(capturedPiece));
   }
 
-  // Handle promotion
 
   // Handle castling - set global flags
 
   // Handle en-passant
+  if (flag == MOVE_FLAG_ENPASSANT) {
+    const enPassantOffset = gameState.turnCol == WHITE ? -8 : 8;
+    const capturedPieceSquare = gameState.enpassantSquare + enPassantOffset;
+    const capturedPiece = gameState.board[capturedPieceSquare];
+    uiFunctionList.push(() => removePieceFromUI(capturedPieceSquare));
+    uiFunctionList.push(() => addCapturedPiece(capturedPiece))
+    gameState.board[capturedPieceSquare] = NONE;
+  }
 
   // Check if pawn moved two forward - if so, set en passant flag - otherwise reset it
+  if (flag == MOVE_FLAG_PAWN_TWO) {
+    const enPassantOffset = gameState.turnCol == WHITE ? -8 : 8;
+    gameState.enpassantSquare = endSquare + enPassantOffset;
+  }
+  else {
+    gameState.enpassantSquare = 0;
+  }
 
 
-  // Move pieces in board array
-  gameState.board[endSquare] = movePiece;
+  // Move pieces in board array - also check promotion
+  if (flag == MOVE_FLAG_PROMOTION) {
+    gameState.board[endSquare] = gameState.turnCol | QUEEN;
+    const color = gameState.turnCol; // get turnCol by value
+    uiFunctionList.push(() => promotePieceTypeToQueen(startSquare, color));
+  }
+  else {
+    gameState.board[endSquare] = movePiece;
+  }
   gameState.board[startSquare] = NONE;
 
   // Update game state
@@ -601,6 +649,12 @@ function createCaptureHint(squareClass) {
 // Adds the tiny picture of a captured piece on the appropriate player's side of the UI
 function addCapturedPiece(piece) {
 
+}
+
+function getPieceClassFromPiece(piece) {
+  const pieceChars = {
+    // [KING]: 'k', [PAWN]: 
+  }
 }
 
 function selectPiece(piece) {
@@ -671,8 +725,16 @@ function updatePieceSquareClass(oldSquare, newSquare) {
   const oldSquareClass = getSquareClassFromIndex(oldSquare);
   const newSquareClass = getSquareClassFromIndex(newSquare);
   const pieceDiv = pieces.querySelector(`.${oldSquareClass}`);
-  pieceDiv.classList.remove(oldSquareClass);
-  pieceDiv.classList.add(newSquareClass);
+  pieceDiv.classList.replace(oldSquareClass, newSquareClass);
+}
+
+function promotePieceTypeToQueen(squareIndex, color) {
+  const squareClass = getSquareClassFromIndex(squareIndex);
+  const pieceDiv = pieces.querySelector(`.${squareClass}`);
+  const colorChar = color == WHITE ? 'w' : 'b';
+  const newPieceClass = colorChar + 'q';
+  const oldPieceClass = pieceDiv.className.split(" ")[0];
+  pieceDiv.classList.replace(oldPieceClass, newPieceClass);
 }
 
 // For captures
