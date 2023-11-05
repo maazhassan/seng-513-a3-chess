@@ -20,6 +20,7 @@ const COLOR_MASK = 0b11000;
 // Constants for easier move generation
 const directionOffsets = [8, -8, -1, 1, 7, -7, 9, -9]; // N, S, W, E, NW, SE, NE, SW
 const numSquaresToEdge = []; // 2D, each element is an array of size 8
+const knightJumps = [15, 17, -17, -15, 10, -6, 6, -10] // knight target square offsets
 
 // Flags for special move types
 const MOVE_FLAG_PROMOTION = 1;
@@ -398,6 +399,8 @@ function generateMoves(index = null) {
   for (let startSquare = start; startSquare < end; startSquare++) {
     const piece = gameState.board[startSquare];
     const pieceType = getPieceType(piece);
+    const rank = Math.floor(startSquare / 8);
+    const file = startSquare % 8;
     if (pieceIsTurnColor(piece)) {
       if (slidingPieces.has(pieceType)) { // Queen, Bishop, Rook
         const startDirIndex = pieceType == BISHOP ? 4 : 0;
@@ -422,13 +425,27 @@ function generateMoves(index = null) {
         }
       }
       else if (pieceType == KNIGHT) {
-
+        for (const knightJumpOffset of knightJumps) {
+          const targetSquare = startSquare + knightJumpOffset;
+          if (targetSquare >= 0 && targetSquare < 64) {
+            const targetSquareRank = Math.floor(targetSquare / 8);
+            const targetSquareFile = targetSquare % 8;
+            const rankDelta = Math.abs(rank - targetSquareRank);
+            const fileDelta = Math.abs(file - targetSquareFile);
+            const maxDelta = Math.max(rankDelta, fileDelta);
+            if (maxDelta == 2) {
+              const pieceOnTargetSquare = gameState.board[targetSquare];
+              if (!pieceIsTurnColor(pieceOnTargetSquare)) {
+                moves.push(new Move(startSquare, targetSquare));
+              }
+            }
+          }
+        }
       }
       else if (pieceType == PAWN) {
         const pawnOffset = gameState.turnCol == WHITE ? 8 : -8; // Which direction is forward?
         const startRank = gameState.turnCol == WHITE ? 1 : 6;
         const promotionRank = gameState.turnCol == WHITE ? 7 : 0;
-        const rank = Math.floor(startSquare / 8);
         const pawnAttackDirectionIndex = [[4, 6], [7, 5]]; // Index into directionOffsets
         const forwardIndex = gameState.turnCol == WHITE ? 0 : 1;
         const squareOneForward = startSquare + pawnOffset;
@@ -459,7 +476,7 @@ function generateMoves(index = null) {
             const targetPiece = gameState.board[targetSquare];
 
             // Regular capture
-            if (targetPiece && !pieceIsTurnColor(targetPiece)) {
+            if (targetPiece & gameState.oppCol) {
               if (rank == promotionRank - 1) { // next move is promotion
                 moves.push(new Move(startSquare, targetSquare, MOVE_FLAG_PROMOTION));
               }
@@ -508,12 +525,6 @@ function generateLegalMoves() {
     undoLastMoveBackend();
     return legal;
   });
-}
-
-// Returns: a list of all legal moves that originate at the given square index
-// Filtered from the global moves list
-function getMovesStartingAtSquare(square) {
-
 }
 
 // Makes the move in the board array, and calls generateMoves to update moves
