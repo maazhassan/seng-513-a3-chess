@@ -84,6 +84,8 @@ const highlights = document.getElementById("highlights");
 const pieces = document.getElementById("pieces");
 const moveHints = document.getElementById("move-hints");
 const captureHints = document.getElementById("capture-hints");
+const capturedPiecesBlack = document.querySelector("#sidebar :nth-child(1)");
+const capturedPiecesWhite = document.querySelector("#sidebar :nth-child(3)")
 
 const menuText = document.querySelector("#menu > span");
 
@@ -760,13 +762,18 @@ function createCaptureHint(squareClass) {
 
 // Adds the tiny picture of a captured piece on the appropriate player's side of the UI
 function addCapturedPiece(piece) {
-
+  const div = piece & WHITE ? capturedPiecesBlack : capturedPiecesWhite;
+  const colorChar = piece & WHITE ? 'w' : 'b';
+  const pieceDiv = document.createElement("div");
+  pieceDiv.classList.add(colorChar + getPieceClassFromPiece(piece));
+  div.appendChild(pieceDiv);
 }
 
 function getPieceClassFromPiece(piece) {
   const pieceChars = {
-    // [KING]: 'k', [PAWN]: 
+    [KING]: 'k', [PAWN]: 'p', [KNIGHT]: 'n', [BISHOP]: 'b', [ROOK]: 'r', [QUEEN]: 'q'
   }
+  return pieceChars[getPieceType(piece)];
 }
 
 function selectPiece(piece) {
