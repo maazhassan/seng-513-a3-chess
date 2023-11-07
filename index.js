@@ -134,7 +134,7 @@ function handleClickPlay() {
     square.addEventListener("mousedown", handleSquareMouseDown);
   }
 
-  menuText.innerText = "Turn White";
+  menuText.innerText = "Turn White.";
   playSound.play();
   moves = generateLegalMoves();
 }
@@ -599,6 +599,8 @@ function makeMove(move) {
   
   if (moves.length == 0) {
     // Checkmate
+    checkmateSound.play();
+    menuText.innerText = `Checkmate.\n ${gameState.turnCol == WHITE ? "Black" : "White"} wins!`;
   }
   else {
     const movedPieceMoves = generateMoves(move.endSquare);
@@ -611,7 +613,7 @@ function makeMove(move) {
     }
     if (gameState.inCheck) {
       checkSound.play();
-      menuText.innerText = `Check. Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
+      menuText.innerText = `Check.\n Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
     }
     else {
       moveSound.play();

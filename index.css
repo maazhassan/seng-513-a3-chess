@@ -97,13 +97,15 @@ button {
   color: white;
   margin: 1rem 0 0;
   text-shadow: 0 .1rem 0 rgba(0, 0, 0, 0.3);
+  position: absolute;
+  text-align: center;
 }
 
 #play-button {
   width: 80%;
   height: 2rem;
   background-color: var(--play-button);
-  margin: 4rem 0 0;
+  margin: 7.2rem 0 0;
   font-size: 1.2rem;
   color: white;
   border: none;
