@@ -55,6 +55,7 @@ let gameState = {
   blackCastlingQS: true,
   // En passant square index (0 can be used as none, because 0 is impossible)
   enpassantSquare: 0,
+  inCheck: false,
 }
 
 let prevGameState = null;
@@ -389,7 +390,7 @@ function clearAllChildren(parent) {
 // Returns: a list of all psuedo-legal moves
 function generateMoves(index = null) {
   const moves = [];
-  const slidingPieces = new Set([QUEEN, BISHOP, ROOK])
+  const slidingPieces = new Set([QUEEN, BISHOP, ROOK]);
   const start = index == null ? 0 : index;
   const end = index == null ? 64 : index + 1;
   if (index != null) {
@@ -493,7 +494,41 @@ function generateMoves(index = null) {
         }
       }
       else { // King
+        for (const kingMoveOffset of directionOffsets) {
+          const targetSquare = startSquare + kingMoveOffset;
+          if (targetSquare >= 0 && targetSquare < 64) {
+            const kingMoveSquareRank = Math.floor(targetSquare / 8);
+            const kingMoveSquareFile = targetSquare % 8;
+            const rankDelta = Math.abs(rank - kingMoveSquareRank);
+            const fileDelta = Math.abs(file - kingMoveSquareFile);
+            const maxDelta = Math.max(rankDelta, fileDelta);
+            if (maxDelta == 1) {
+              const pieceOnTargetSquare = gameState.board[targetSquare];
+              const isCapture = pieceOnTargetSquare & gameState.oppCol;
+              if (!pieceIsTurnColor(pieceOnTargetSquare)) {
+                moves.push(new Move(startSquare, targetSquare));
 
+                if (!gameState.inCheck && !isCapture) {
+                  // Kingside castle
+                  if ((targetSquare == 5 && gameState.whiteCastlingKS) || (targetSquare == 61 && gameState.blackCastlingKS)) {
+                    const castleSquare = targetSquare + 1;
+                    if (gameState.board[castleSquare] == NONE) {
+                      moves.push(new Move(startSquare, castleSquare, MOVE_FLAG_CASTLING));
+                    }
+                  }
+
+                  // Queenside castle
+                  else if ((targetSquare == 3 && gameState.whiteCastlingQS) || (targetSquare == 59 && gameState.blackCastlingQS)) {
+                    const castleSquare = targetSquare - 1;
+                    if (gameState.board[castleSquare] == NONE && gameState.board[castleSquare - 1] == NONE) {
+                      moves.push(new Move(startSquare, castleSquare, MOVE_FLAG_CASTLING));
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -511,8 +546,11 @@ function generateLegalMoves() {
   
   // Filter out pins by playing all moves and seeing if opponent can take our king
   // Also filters moves that don't deal with the check, if there is one
+  // Also filters out castling moves if the move castles through/into a check
   // Don't generate legal moves for enemy, because pinned pieces can still pin our pieces
   return pseudoLegalMoves.filter(move => {
+    const isCastling = move.flag == MOVE_FLAG_CASTLING;
+    const ogEndSquare = move.endSquare;
     makeMoveBackend(move);
     const oppMoves = generateMoves();
     let legal = true;
@@ -520,6 +558,20 @@ function generateLegalMoves() {
       if (getPieceType(gameState.board[move.endSquare]) == KING) {
         legal = false;
         break;
+      }
+      if (isCastling) {
+        if (ogEndSquare == 6 || ogEndSquare == 62) {
+          if (move.endSquare == ogEndSquare - 1) {
+            legal = false;
+            break;
+          }
+        }
+        else if (ogEndSquare == 2 || ogEndSquare == 58) {
+          if (move.endSquare == ogEndSquare + 1) {
+            legal = false;
+            break;
+          }
+        }
       }
     }
     undoLastMoveBackend();
@@ -548,14 +600,14 @@ function makeMove(move) {
   }
   else {
     const movedPieceMoves = generateMoves(move.endSquare);
-    let check = false;
+    gameState.inCheck = false;
     for (const move of movedPieceMoves) {
       if (getPieceType(gameState.board[move.endSquare]) == KING) {
-        check = true;
+        gameState.inCheck = true;
         break;
       }
     }
-    if (check) {
+    if (gameState.inCheck) {
       checkSound.play();
       menuText.innerText = `Check. Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
     }
@@ -585,8 +637,58 @@ function makeMoveBackend(move) {
     uiFunctionList.push(() => addCapturedPiece(capturedPiece));
   }
 
-
-  // Handle castling - set global flags
+  // Handle castling - set global flags and move the rook over
+  if (getPieceType(movePiece) == KING) {
+    if (gameState.turnCol == WHITE) {
+      gameState.whiteCastlingKS = false;
+      gameState.whiteCastlingQS = false;
+    }
+    else {
+      gameState.blackCastlingKS = false;
+      gameState.blackCastlingQS = false;
+    }
+  }
+  if (getPieceType(movePiece) == ROOK || getPieceType(capturedPiece) == ROOK) {
+    const rookSquare = getPieceType(movePiece) == ROOK ? startSquare : endSquare;
+    switch (rookSquare) {
+      case 0:
+        gameState.whiteCastlingQS = false;
+        break;
+      case 7:
+        gameState.whiteCastlingKS = false;
+        break;
+      case 56:
+        gameState.blackCastlingQS = false;
+        break;
+      case 63:
+        gameState.blackCastlingKS = false;
+        break;
+    }
+  }
+  if (flag == MOVE_FLAG_CASTLING) {
+    switch (endSquare) {
+      case 2:
+        gameState.board[0] = NONE;
+        gameState.board[3] = WHITE | ROOK;
+        uiFunctionList.push(() => updatePieceSquareClass(0, 3));
+        break;
+      case 6:
+        gameState.board[7] = NONE;
+        gameState.board[5] = WHITE | ROOK;
+        uiFunctionList.push(() => updatePieceSquareClass(7, 5));
+        break;
+      case 58:
+        gameState.board[56] = NONE;
+        gameState.board[59] = BLACK | ROOK;
+        uiFunctionList.push(() => updatePieceSquareClass(56, 59));
+        break;
+      case 62:
+        gameState.board[63] = NONE;
+        gameState.board[61] = BLACK | ROOK;
+        uiFunctionList.push(() => updatePieceSquareClass(63, 61));
+        break;
+    }
+  }
 
   // Handle en-passant
   if (flag == MOVE_FLAG_ENPASSANT) {
@@ -606,7 +708,6 @@ function makeMoveBackend(move) {
   else {
     gameState.enpassantSquare = 0;
   }
-
 
   // Move pieces in board array - also check promotion
   if (flag == MOVE_FLAG_PROMOTION) {
