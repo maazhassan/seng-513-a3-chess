@@ -455,7 +455,7 @@ function generateMoves(index = null) {
 
         // Pawn forward moves
         if (gameState.board[squareOneForward] == NONE) {
-          if (rank == promotionRank - 1) { // next move is promotion
+          if (rank == promotionRank - 1 || rank == promotionRank + 1) { // next move is promotion
             moves.push(new Move(startSquare, squareOneForward, MOVE_FLAG_PROMOTION));
           }
           else {
@@ -480,7 +480,7 @@ function generateMoves(index = null) {
 
             // Regular capture
             if (targetPiece & gameState.oppCol) {
-              if (rank == promotionRank - 1) { // next move is promotion
+              if (rank == promotionRank - 1 || rank == promotionRank + 1) { // next move is promotion
                 moves.push(new Move(startSquare, targetSquare, MOVE_FLAG_PROMOTION));
               }
               else {
