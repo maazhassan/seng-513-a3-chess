@@ -594,23 +594,29 @@ function makeMove(move) {
     func();
   }
 
+  // Is it check?
+  const movedPieceMoves = generateMoves(move.endSquare);
+  gameState.inCheck = false;
+  for (const move of movedPieceMoves) {
+    if (getPieceType(gameState.board[move.endSquare]) == KING) {
+      gameState.inCheck = true;
+      break;
+    }
+  }
+
   // Generate new moves lists
   moves = generateLegalMoves();
   
   if (moves.length == 0) {
-    // Checkmate
     checkmateSound.play();
-    menuText.innerText = `Checkmate.\n ${gameState.turnCol == WHITE ? "Black" : "White"} wins!`;
+    if (gameState.inCheck) { // Checkmate
+      menuText.innerText = `Checkmate.\n ${gameState.turnCol == WHITE ? "Black" : "White"} wins!`;
+    }
+    else { // Stalemate
+      menuText.innerText = "Stalemate.";
+    }
   }
   else {
-    const movedPieceMoves = generateMoves(move.endSquare);
-    gameState.inCheck = false;
-    for (const move of movedPieceMoves) {
-      if (getPieceType(gameState.board[move.endSquare]) == KING) {
-        gameState.inCheck = true;
-        break;
-      }
-    }
     if (gameState.inCheck) {
       checkSound.play();
       menuText.innerText = `Check.\n Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
@@ -620,7 +626,6 @@ function makeMove(move) {
       menuText.innerText = `Turn ${gameState.turnCol == WHITE ? "White" : "Black"}.`;
     }
   }
-
 }
 
 function makeMoveBackend(move) {
