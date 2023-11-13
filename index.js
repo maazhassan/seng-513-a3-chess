@@ -98,7 +98,7 @@ const mouseLeaveReset = () => playButtonElement.style.backgroundColor = "var(--r
 resetGame();
 precomputeMoveData();
 
-// Sounds
+// Sounds, which are either created by me or from freesound.org, which are CC0
 const playSound = new Audio("./assets/play_button.wav");
 const moveSound = new Audio("./assets/piece_moving.mp3");
 const checkSound = new Audio("./assets/check.ogg");

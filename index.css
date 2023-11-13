@@ -428,6 +428,8 @@ button {
   border-top-right-radius: 5px;
 }
 
+/* These assets are from https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces
+and are under CC0 */
 .wp {
   background-image: url("./assets/white_pawn.svg");
 }
