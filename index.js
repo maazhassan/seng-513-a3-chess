@@ -193,8 +193,7 @@ function handlePieceMouseDown(e) {
 
 // Handles when the mouse is down and a piece is being dragged, we need to
 // update the piece position in real time to follow the mouse
-// We also need to keep track of which square the piece is over at any given moment,
-// probably stored in a variable
+// Custom Animation
 function handlePieceDrag(e) {
   if (mouseDownOnPiece) {
     draggingPiece = true;
@@ -390,6 +389,7 @@ function clearAllChildren(parent) {
 
 // Generates a list of all psuedo-legal moves for the current board position
 // Returns: a list of all psuedo-legal moves
+// Custom Algorithms
 function generateMoves(index = null) {
   const moves = [];
   const slidingPieces = new Set([QUEEN, BISHOP, ROOK]);
@@ -543,6 +543,7 @@ function generateMoves(index = null) {
 }
 
 // Returns: a list of all legal moves
+// Custom Interaction Mechanism
 function generateLegalMoves() {
   const pseudoLegalMoves = generateMoves();
   
@@ -585,6 +586,7 @@ function generateLegalMoves() {
 // Also updates the DOM to reflect the new board state
 // If this move puts the other player in check, keep track of that
 // Switches the current player
+// Custom Interaction Mechanism
 function makeMove(move) {
   // Update backend
   const uiFunctionList = makeMoveBackend(move);
@@ -628,6 +630,8 @@ function makeMove(move) {
   }
 }
 
+// Makes the move in the backend and returns a list of callback functions that 
+// can be called to update the UI
 function makeMoveBackend(move) {
   // Save old gamestate
   prevGameState = structuredClone(gameState);
