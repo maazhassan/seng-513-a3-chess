@@ -1,4 +1,4 @@
-# Maaz Hassan - SENG 513 Assignment 2 - Chess
+# Maaz Hassan - SENG 513 Assignment 3 - Chess
 
 ## Target Platform: Desktop
 
